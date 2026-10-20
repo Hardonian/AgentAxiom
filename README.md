@@ -44,3 +44,15 @@ pip install -e '.[vertex,export]'
 ```
 
 `GeminiVertexClient` in `agentaxiom.providers` is the optional recorder adapter; `export_gcs` and `export_bigquery` in `agentaxiom.exports` publish evidence to those sinks. Cloud Run can invoke the CLI or pytest suite directly, and the returned evidence record carries the IDs needed to correlate Cloud Trace spans supplied by the calling service.
+
+## Cloud Run evaluator
+
+The included container exposes an offline-only evaluator, suitable for a CI runner or a protected internal service:
+
+```bash
+docker build -t agentaxiom .
+docker run -p 8080:8080 agentaxiom
+# POST /evaluate with {"transcript": <fixture>, "contract": <contract>}
+```
+
+`GET /healthz` returns readiness. `POST /evaluate` never invokes a model; evidence writing is optional and defaults to ephemeral container storage.

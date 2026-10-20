@@ -1,0 +1,6 @@
+.git
+.github
+.tmp-evidence
+__pycache__
+.pytest_cache
+agentaxiom-evidence
