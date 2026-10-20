@@ -2,7 +2,7 @@ import json
 
 from agentaxiom.comparison import ComparisonPolicy, compare
 from agentaxiom.contracts import Contract, evaluate_contract
-from agentaxiom.evidence import write_bundle
+from agentaxiom.evidence import verify_bundle, write_bundle
 from agentaxiom.models import Invocation, Scenario, Transcript, Turn
 from agentaxiom.pricing import ModelPricing, PricingCatalog
 
@@ -46,3 +46,4 @@ def test_evidence_has_checksum_and_redacts(tmp_path):
     evidence, manifest = json.loads((bundle / "evidence.json").read_text()), json.loads((bundle / "manifest.json").read_text())
     assert evidence["transcript"]["invocation"]["raw_response"]["api_key"] == "[REDACTED]"
     assert manifest["evidence_id"] == sample.evidence_id
+    assert verify_bundle(bundle)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import json
 import re
+import tempfile
 from hashlib import sha256
 from dataclasses import asdict
 from pathlib import Path
@@ -27,9 +28,24 @@ def write_bundle(directory: str | Path, transcript: Transcript, result: Contract
     target = Path(directory); target.mkdir(parents=True, exist_ok=True)
     payload = redact({"transcript": transcript.to_dict(), "result": asdict(result), "extra": extra or {}})
     encoded = json.dumps(payload, indent=2, sort_keys=True)
-    (target / "evidence.json").write_text(encoded, encoding="utf-8")
-    (target / "manifest.json").write_text(json.dumps({"schema_version": transcript.schema_version, "evidence_id": transcript.evidence_id, "files": {"evidence.json": sha256(encoded.encode()).hexdigest()}}, indent=2), encoding="utf-8")
+    _atomic_write(target / "evidence.json", encoded)
+    _atomic_write(target / "manifest.json", json.dumps({"schema_version": transcript.schema_version, "evidence_id": transcript.evidence_id, "files": {"evidence.json": sha256(encoded.encode()).hexdigest()}}, indent=2))
     status = "PASS" if result.passed else "FAIL"
     body = html.escape(json.dumps(payload, indent=2, sort_keys=True))
-    (target / "index.html").write_text(f"<!doctype html><title>AgentAxiom {status}</title><h1>{status}: {html.escape(result.contract)}</h1><pre>{body}</pre>", encoding="utf-8")
+    _atomic_write(target / "index.html", f"<!doctype html><meta charset=utf-8><title>AgentAxiom {status}</title><h1>{status}: {html.escape(result.contract)}</h1><pre>{body}</pre>")
     return target
+
+
+def verify_bundle(directory: str | Path) -> bool:
+    target = Path(directory)
+    manifest = json.loads((target / "manifest.json").read_text(encoding="utf-8"))
+    evidence = (target / "evidence.json").read_bytes()
+    return sha256(evidence).hexdigest() == manifest["files"]["evidence.json"]
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        handle.write(content)
+        handle.flush()
+        temp_path = Path(handle.name)
+    temp_path.replace(path)

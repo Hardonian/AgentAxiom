@@ -15,7 +15,7 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: python -m pip install .
+      run: python -m pip install '${{ github.action_path }}'
     - shell: bash
       run: python -m agentaxiom.cli check '${{ inputs.transcript }}' '${{ inputs.contract }}' --evidence-dir '${{ inputs.evidence-dir }}'
     - uses: actions/upload-artifact@v4

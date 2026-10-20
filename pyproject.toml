@@ -10,11 +10,32 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "AgentAxiom"}]
-dependencies = ["jsonschema>=4.23", "pytest>=8.0"]
+keywords = ["ai", "agents", "gemini", "vertex-ai", "testing", "regression-testing"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+]
+dependencies = ["jsonschema>=4.23"]
+
+[project.urls]
+Homepage = "https://github.com/scott/AgentAxiom"
+Repository = "https://github.com/scott/AgentAxiom"
+Issues = "https://github.com/scott/AgentAxiom/issues"
+Changelog = "https://github.com/scott/AgentAxiom/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 vertex = ["google-genai>=1.0"]
 export = ["google-cloud-bigquery>=3.0", "google-cloud-storage>=2.0"]
+test = ["pytest>=8.0"]
+lint = ["ruff>=0.8"]
 
 [project.entry-points.pytest11]
 agentaxiom = "agentaxiom.pytest_plugin"
@@ -28,3 +49,14 @@ packages = ["src/agentaxiom"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.coverage.run]
+branch = true
+source = ["agentaxiom"]
