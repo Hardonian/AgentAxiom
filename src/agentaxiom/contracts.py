@@ -14,7 +14,10 @@ class Contract:
     output_schema: dict[str, Any] | None = None
     required_tools: list[str] = field(default_factory=list)
     forbidden_tools: list[str] = field(default_factory=list)
+    tool_argument_schemas: dict[str, dict[str, Any]] = field(default_factory=dict)
     require_citations: bool = False
+    allowed_citation_domains: list[str] = field(default_factory=list)
+    minimum_citations: int = 0
     allowed_safety_actions: list[str] | None = None
     max_latency_ms: float | None = None
     max_cost_usd: float | None = None
@@ -40,8 +43,24 @@ def evaluate_contract(transcript: Transcript, contract: Contract) -> ContractRes
     for name in contract.forbidden_tools:
         if name in called:
             violations.append({"kind": "tool_forbidden", "tool": name})
+    for call in inv.tool_calls:
+        name = call.get("name") or call.get("function", {}).get("name")
+        schema = contract.tool_argument_schemas.get(name)
+        if schema:
+            arguments = call.get("arguments", call.get("function", {}).get("arguments", {}))
+            for error in Draft202012Validator(schema).iter_errors(arguments):
+                violations.append({"kind": "tool_arguments", "tool": name, "path": list(error.path), "message": error.message})
     if contract.require_citations and not inv.citations:
         violations.append({"kind": "grounding", "message": "response has no citations"})
+    if len(inv.citations) < contract.minimum_citations:
+        violations.append({"kind": "citation_count", "actual": len(inv.citations), "minimum": contract.minimum_citations})
+    if contract.allowed_citation_domains:
+        from urllib.parse import urlparse
+        allowed = set(contract.allowed_citation_domains)
+        for citation in inv.citations:
+            uri = citation.get("uri") or citation.get("web", {}).get("uri") or ""
+            if not uri or urlparse(uri).netloc not in allowed:
+                violations.append({"kind": "citation_domain", "uri": uri, "allowed": sorted(allowed)})
     action = inv.safety.get("action")
     if contract.allowed_safety_actions is not None and action not in contract.allowed_safety_actions:
         violations.append({"kind": "safety", "actual": action, "allowed": contract.allowed_safety_actions})

@@ -48,6 +48,9 @@ class Invocation:
     latency_ms: float = 0.0
     estimated_cost_usd: float = 0.0
     raw_response: dict[str, Any] = field(default_factory=dict)
+    request_id: str | None = None
+    trace_id: str | None = None
+    labels: dict[str, str] = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -59,6 +62,11 @@ class Transcript:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+    @property
+    def evidence_id(self) -> str:
+        """Stable identity for grouping equivalent captured evidence."""
+        return stable_hash({"prompt": self.scenario.prompt_hash, "invocation": self.invocation.model, "generation": self.invocation.generation})
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Transcript":
