@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentaxiom"
+version = "0.1.0"
+description = "Evidence-first regression and contract testing for Gemini and Vertex AI agents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "AgentAxiom"}]
+dependencies = ["jsonschema>=4.23", "pytest>=8.0"]
+
+[project.optional-dependencies]
+vertex = ["google-genai>=1.0"]
+export = ["google-cloud-bigquery>=3.0", "google-cloud-storage>=2.0"]
+
+[project.entry-points.pytest11]
+agentaxiom = "agentaxiom.pytest_plugin"
+
+[project.scripts]
+agentaxiom = "agentaxiom.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentaxiom"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

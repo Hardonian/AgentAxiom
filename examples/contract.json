@@ -1,0 +1,8 @@
+{
+  "name": "grounded-answer",
+  "output_schema": {"type": "object", "required": ["answer"], "properties": {"answer": {"type": "string"}}},
+  "required_tools": ["search"],
+  "require_citations": true,
+  "max_latency_ms": 3000,
+  "max_cost_usd": 0.02
+}

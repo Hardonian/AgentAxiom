@@ -1,0 +1,12 @@
+{
+  "schema_version": "v1",
+  "scenario": {"name": "grounded-answer", "turns": [{"role": "user", "content": "What is the policy?"}], "metadata": {"suite": "smoke"}},
+  "invocation": {
+    "model": "gemini-2.5-flash", "region": "us-central1", "provider": "offline",
+    "generation": {"temperature": 0}, "tools": [{"name": "search"}],
+    "response_text": "Yes.", "structured_output": {"answer": "Yes."},
+    "tool_calls": [{"name": "search"}], "citations": [{"uri": "https://example.test/policy"}],
+    "safety": {"action": "allow"}, "token_usage": {"input": 12, "output": 5, "total": 17},
+    "latency_ms": 120, "estimated_cost_usd": 0.0001, "raw_response": {}
+  }
+}
