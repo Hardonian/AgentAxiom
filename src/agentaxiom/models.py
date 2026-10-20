@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 def stable_hash(value: Any) -> str:
     import json
+
     return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
 
 
@@ -66,9 +67,23 @@ class Transcript:
     @property
     def evidence_id(self) -> str:
         """Stable identity for grouping equivalent captured evidence."""
-        return stable_hash({"prompt": self.scenario.prompt_hash, "invocation": self.invocation.model, "generation": self.invocation.generation})
+        return stable_hash(
+            {
+                "prompt": self.scenario.prompt_hash,
+                "invocation": self.invocation.model,
+                "generation": self.invocation.generation,
+            }
+        )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Transcript":
-        scenario = Scenario(turns=[Turn(**turn) for turn in data["scenario"]["turns"]], name=data["scenario"]["name"], metadata=data["scenario"].get("metadata", {}))
-        return cls(scenario=scenario, invocation=Invocation(**data["invocation"]), schema_version=data.get("schema_version", "v1"))
+    def from_dict(cls, data: dict[str, Any]) -> Transcript:
+        scenario = Scenario(
+            turns=[Turn(**turn) for turn in data["scenario"]["turns"]],
+            name=data["scenario"]["name"],
+            metadata=data["scenario"].get("metadata", {}),
+        )
+        return cls(
+            scenario=scenario,
+            invocation=Invocation(**data["invocation"]),
+            schema_version=data.get("schema_version", "v1"),
+        )

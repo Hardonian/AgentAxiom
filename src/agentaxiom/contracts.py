@@ -50,17 +50,26 @@ def evaluate_contract(transcript: Transcript, contract: Contract) -> ContractRes
         if schema:
             arguments = call.get("arguments", call.get("function", {}).get("arguments", {}))
             for error in Draft202012Validator(schema).iter_errors(arguments):
-                violations.append({"kind": "tool_arguments", "tool": name, "path": list(error.path), "message": error.message})
+                violations.append(
+                    {"kind": "tool_arguments", "tool": name, "path": list(error.path), "message": error.message}
+                )
     for turn in transcript.scenario.turns:
         if turn.role == "tool" and turn.tool_name in contract.tool_output_schemas:
-            for error in Draft202012Validator(contract.tool_output_schemas[turn.tool_name]).iter_errors(turn.tool_output):
-                violations.append({"kind": "tool_output", "tool": turn.tool_name, "path": list(error.path), "message": error.message})
+            for error in Draft202012Validator(contract.tool_output_schemas[turn.tool_name]).iter_errors(
+                turn.tool_output
+            ):
+                violations.append(
+                    {"kind": "tool_output", "tool": turn.tool_name, "path": list(error.path), "message": error.message}
+                )
     if contract.require_citations and not inv.citations:
         violations.append({"kind": "grounding", "message": "response has no citations"})
     if len(inv.citations) < contract.minimum_citations:
-        violations.append({"kind": "citation_count", "actual": len(inv.citations), "minimum": contract.minimum_citations})
+        violations.append(
+            {"kind": "citation_count", "actual": len(inv.citations), "minimum": contract.minimum_citations}
+        )
     if contract.allowed_citation_domains:
         from urllib.parse import urlparse
+
         allowed = set(contract.allowed_citation_domains)
         for citation in inv.citations:
             uri = citation.get("uri") or citation.get("web", {}).get("uri") or ""

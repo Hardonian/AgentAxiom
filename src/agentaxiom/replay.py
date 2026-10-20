@@ -21,6 +21,7 @@ class ReplayPolicy:
 
 class ReplayRunner:
     """Offline replay by default. Live providers must be explicitly permitted."""
+
     def __init__(self, client: AgentClient | None = None, policy: ReplayPolicy | None = None):
         self.client, self.policy, self.live_calls, self.live_cost = client, policy or ReplayPolicy(), 0, 0.0
 

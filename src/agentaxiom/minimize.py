@@ -13,11 +13,14 @@ def minimize_conversation(recorded: Transcript, still_fails: Callable[[Transcrip
         chunk = max(1, len(turns) // granularity)
         reduced = False
         for start in range(0, len(turns), chunk):
-            candidate = turns[:start] + turns[start + chunk:]
-            if candidate and still_fails(Transcript(Scenario(recorded.scenario.name, candidate, recorded.scenario.metadata), recorded.invocation)):
+            candidate = turns[:start] + turns[start + chunk :]
+            if candidate and still_fails(
+                Transcript(Scenario(recorded.scenario.name, candidate, recorded.scenario.metadata), recorded.invocation)
+            ):
                 turns, granularity, reduced = candidate, max(2, granularity - 1), True
                 break
         if not reduced:
-            if granularity >= len(turns): break
+            if granularity >= len(turns):
+                break
             granularity = min(len(turns), granularity * 2)
     return Transcript(Scenario(recorded.scenario.name, turns, recorded.scenario.metadata), recorded.invocation)

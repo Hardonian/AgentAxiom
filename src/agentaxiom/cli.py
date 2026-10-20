@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import argparse, json
+import argparse
+import json
 from pathlib import Path
 
 from .comparison import ComparisonPolicy, compare
@@ -9,12 +10,22 @@ from .evidence import write_bundle
 from .minimize import minimize_conversation
 from .models import Transcript
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="agentaxiom")
     sub = parser.add_subparsers(dest="command", required=True)
-    check = sub.add_parser("check"); check.add_argument("transcript"); check.add_argument("contract"); check.add_argument("--evidence-dir", default="agentaxiom-evidence")
-    diff = sub.add_parser("compare"); diff.add_argument("baseline"); diff.add_argument("candidate"); diff.add_argument("--policy")
-    minimize = sub.add_parser("minimize"); minimize.add_argument("transcript"); minimize.add_argument("contract"); minimize.add_argument("--output", required=True)
+    check = sub.add_parser("check")
+    check.add_argument("transcript")
+    check.add_argument("contract")
+    check.add_argument("--evidence-dir", default="agentaxiom-evidence")
+    diff = sub.add_parser("compare")
+    diff.add_argument("baseline")
+    diff.add_argument("candidate")
+    diff.add_argument("--policy")
+    minimize = sub.add_parser("minimize")
+    minimize.add_argument("transcript")
+    minimize.add_argument("contract")
+    minimize.add_argument("--output", required=True)
     args = parser.parse_args()
     if args.command == "check":
         transcript = Transcript.from_dict(json.loads(Path(args.transcript).read_text()))
@@ -38,8 +49,18 @@ def main() -> int:
             return 2
         minimized = minimize_conversation(recorded, lambda trace: not evaluate_contract(trace, contract).passed)
         Path(args.output).write_text(json.dumps(minimized.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
-        print(json.dumps({"turns_before": len(recorded.scenario.turns), "turns_after": len(minimized.scenario.turns), "output": args.output}))
+        print(
+            json.dumps(
+                {
+                    "turns_before": len(recorded.scenario.turns),
+                    "turns_after": len(minimized.scenario.turns),
+                    "output": args.output,
+                }
+            )
+        )
         return 0
     return 2
 
-if __name__ == "__main__": raise SystemExit(main())
+
+if __name__ == "__main__":
+    raise SystemExit(main())
