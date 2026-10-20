@@ -100,3 +100,42 @@ class GeminiVertexClient:
             estimated_cost_usd=self.pricing.estimate(self.model, token_usage),
             raw_response=raw,
         )
+
+
+class ADKRecorder:
+    """Normalizes ADK event dictionaries without coupling core evidence to an ADK release."""
+
+    def __init__(self, *, model: str, region: str, adk_version: str):
+        self.model = model
+        self.region = region
+        self.adk_version = adk_version
+
+    def record(self, scenario: Scenario, events: list[dict[str, Any]]) -> Invocation:
+        """Record normalized ADK events emitted by the calling agent integration.
+
+        Event dictionaries may contain `text`, `function_call`, `grounding`,
+        `safety`, `usage`, `latency_ms`, `request_id`, and `trace_id` keys.
+        The calling integration retains ownership of live execution.
+        """
+        text = "\n".join(str(event["text"]) for event in events if event.get("text")) or None
+        tool_calls = [event["function_call"] for event in events if event.get("function_call")]
+        citations = [citation for event in events for citation in event.get("grounding", [])]
+        usage: dict[str, int] = {}
+        for event in events:
+            usage.update(event.get("usage", {}))
+        last = events[-1] if events else {}
+        return Invocation(
+            model=self.model,
+            region=self.region,
+            provider="adk",
+            adk_version=self.adk_version,
+            response_text=text,
+            tool_calls=tool_calls,
+            citations=citations,
+            safety=last.get("safety", {}),
+            token_usage=usage,
+            latency_ms=float(last.get("latency_ms", 0)),
+            raw_response={"event_count": len(events)},
+            request_id=last.get("request_id"),
+            trace_id=last.get("trace_id"),
+        )

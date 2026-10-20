@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentaxiom.dev/schemas/contract.v1.schema.json",
+  "title": "AgentAxiom Contract v1",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1},
+    "output_schema": {"type": "object"},
+    "required_tools": {"type": "array", "items": {"type": "string"}},
+    "forbidden_tools": {"type": "array", "items": {"type": "string"}},
+    "tool_argument_schemas": {"type": "object", "additionalProperties": {"type": "object"}},
+    "tool_output_schemas": {"type": "object", "additionalProperties": {"type": "object"}},
+    "require_citations": {"type": "boolean"},
+    "allowed_citation_domains": {"type": "array", "items": {"type": "string"}},
+    "minimum_citations": {"type": "integer", "minimum": 0},
+    "allowed_safety_actions": {"type": ["array", "null"], "items": {"type": "string"}},
+    "max_latency_ms": {"type": ["number", "null"], "minimum": 0},
+    "max_cost_usd": {"type": ["number", "null"], "minimum": 0}
+  },
+  "additionalProperties": false
+}

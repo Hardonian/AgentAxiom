@@ -217,6 +217,7 @@ artifacts/
 dist/
 build/
 *.egg-info/
+.audit-venv/
 
 # Marimo
 marimo/_static/

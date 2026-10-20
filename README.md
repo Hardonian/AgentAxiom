@@ -6,6 +6,8 @@ Evidence-first regression and contract testing for Gemini and Vertex AI agents.
 
 AgentAxiom records a scenario's prompt hash, model/provider identity, region, generation configuration, declared tools, usage, latency, cost, citations and safety metadata. It evaluates deterministic contracts against that record, so CI is offline by default. Live confirmations are opt-in and bounded by a hard call and cost budget.
 
+See the prioritized [100-item go-live gate](docs/GO_LIVE_100.md) for completed repository controls and the required external release approvals.
+
 ## MVP capabilities
 
 - JSON Schema output validation and required/forbidden tool-call contracts.

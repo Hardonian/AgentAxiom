@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentaxiom.dev/schemas/transcript.v1.schema.json",
+  "title": "AgentAxiom Transcript v1",
+  "type": "object",
+  "required": ["schema_version", "scenario", "invocation"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "scenario": {
+      "type": "object", "required": ["name", "turns"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "turns": {"type": "array", "items": {"type": "object", "required": ["role"], "properties": {"role": {"enum": ["system", "user", "assistant", "tool"]}, "content": {"type": ["string", "null"]}, "tool_name": {"type": ["string", "null"]}, "tool_input": {}, "tool_output": {}}}},
+        "metadata": {"type": "object"}
+      }, "additionalProperties": false
+    },
+    "invocation": {
+      "type": "object", "required": ["model", "region"],
+      "properties": {"model": {"type": "string", "minLength": 1}, "region": {"type": "string", "minLength": 1}},
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
