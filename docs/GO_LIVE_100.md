@@ -77,9 +77,9 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 65. [ ] Validate the provider adapter against an isolated real Gemini project (no Gemini Developer API credential is configured here).
 66. [x] Validate the provider adapter against the real Vertex AI project in the configured target region, `us-central1` (`gemini-2.5-flash`, one bounded structured-output call).
 67. [x] Implement an offline ADK event-recording normalization adapter; live ADK-version validation remains required.
-68. [ ] Add provider retry, timeout, and error-normalization policies after live API testing.
+68. [ ] Add provider retry, timeout, and error-normalization policies after live API testing. (Implementation landed 2026-10-20 — `RetryPolicy`/`ProviderError` with offline unit coverage; the gate stays open until live-validated against a real provider, which requires gate 65.)
 69. [ ] Add model-specific token accounting verified against invoices.
-70. [ ] Approve a maintained pricing catalog with effective dates.
+70. [ ] Approve a maintained pricing catalog with effective dates. (Draft catalog `pricing/gemini-catalog-2026-10.json` with per-rate `effective_date`/`source` awaits owner sign-off in `docs/APPROVALS.md`.)
 71. [x] Provision GCS bucket IAM and retention controls: uniform bucket-level access, public-access prevention, a 30-day retention policy, and runtime object-creator access. Retention lock and CMEK remain unconfigured because they require approved governance requirements.
 72. [x] Provision the `agentaxiom` BigQuery dataset and partitioned `runs` table with a dataset-level runtime writer identity and project-level job-user role.
 73. [x] Deploy Cloud Run with IAM authentication, internal/load-balancer-only ingress, a dedicated runtime service account, and a three-instance revision cap.

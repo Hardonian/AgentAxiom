@@ -4,6 +4,7 @@ from .comparison import ComparisonPolicy, ComparisonResult, compare
 from .contracts import Contract, ContractResult, evaluate_contract
 from .models import Scenario, Transcript, Turn
 from .pricing import ModelPricing, PricingCatalog
+from .providers import ProviderError, RetryPolicy
 from .replay import ReplayPolicy, ReplayRunner
 
 __all__ = [
@@ -15,6 +16,8 @@ __all__ = [
     "compare",
     "ModelPricing",
     "PricingCatalog",
+    "ProviderError",
+    "RetryPolicy",
     "Scenario",
     "Turn",
     "Transcript",

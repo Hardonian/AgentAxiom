@@ -14,7 +14,8 @@
 
 ## Integrations
 
-- `GeminiVertexClient` is optional (`pip install 'agentaxiom[vertex]'`).
+- `GeminiVertexClient` is optional (`pip install 'agentaxiom[vertex]'`). It accepts `timeout_s` (per-request HTTP timeout) and `retry_policy` (`RetryPolicy`, bounded exponential backoff with jitter). Failures surface as `ProviderError` with a stable `kind` (`timeout`, `network`, `rate_limited`, `invalid_request`, `permission`, `not_found`, `server`, `client`, `unknown`); unknown errors are never retried. `classify_provider_error` and `call_with_retry` are public for custom adapters.
+- `PricingCatalog.from_json(path)` loads a versioned catalog file; unknown rate keys fail loudly. A draft (unapproved) Gemini catalog ships in `pricing/`; AgentAxiom never fetches pricing remotely.
 - `export_gcs` and `export_bigquery` are optional (`pip install 'agentaxiom[export]'`).
 - The Cloud Run service supports `GET /healthz`, `POST /evaluate`, and `POST /compare`.
 
