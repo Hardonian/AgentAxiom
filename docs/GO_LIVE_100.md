@@ -104,7 +104,7 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 89. [ ] Install the TestPyPI wheel in a clean virtual environment and run smoke checks.
 90. [x] Run a clean-environment `pip-audit`; no known vulnerabilities remain after bootstrap pip update.
 91. [x] Configure and verify release SBOM and provenance-attestation generation.
-92. [ ] Sign release artifacts and document verification steps.
+92. [x] Sign release artifacts with PyPI Trusted Publisher PEP 740/Sigstore attestations and document verification steps (verified for both `0.1.0` distributions on 2026-10-20).
 93. [x] Define supported-version, deprecation, security, and incident-response policy.
 94. [ ] Obtain legal review of license, privacy, export, and AI-use claims.
 95. [x] Establish SLO targets for CI, evaluator availability, and export delay.
