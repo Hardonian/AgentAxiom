@@ -45,16 +45,9 @@ class GeminiVertexClient:
             if turn.role in {"user", "model", "assistant"}
         ]
         started = time.perf_counter()
-        config = {
-            key: value
-            for key, value in {
-                "temperature": self.generation.get("temperature"),
-                "max_output_tokens": self.generation.get("max_output_tokens"),
-                "response_mime_type": self.generation.get("response_mime_type"),
-                "tools": self.tools or None,
-            }.items()
-            if value is not None
-        }
+        config = {key: value for key, value in self.generation.items() if value is not None}
+        if self.tools:
+            config["tools"] = self.tools
         response = self._client.models.generate_content(model=self.model, contents=contents, config=config)
         raw = (
             response.model_dump(exclude_none=True)
@@ -71,6 +64,8 @@ class GeminiVertexClient:
             if "function_call" in part
         ]
         response_text = getattr(response, "text", None)
+        if not response_text:
+            response_text = "\n".join(str(part["text"]) for part in parts if part.get("text")) or None
         try:
             structured = (
                 json.loads(response_text)

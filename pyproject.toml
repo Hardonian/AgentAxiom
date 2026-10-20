@@ -45,6 +45,7 @@ agentaxiom = "agentaxiom.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentaxiom"]
+include = ["src/agentaxiom/ui/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

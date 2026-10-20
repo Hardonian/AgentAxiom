@@ -13,15 +13,17 @@ from .contracts import ContractResult
 from .models import Transcript
 
 DEFAULT_SECRET_PATTERNS = [r"(?i)(api[_-]?key|authorization|token|password)\s*[:=]\s*[^\s,]+", r"AIza[\w-]{20,}"]
+DEFAULT_PII_PATTERNS = [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", r"\b\d{3}-?\d{2}-?\d{4}\b"]
+DEFAULT_REDACTION_PATTERNS = DEFAULT_SECRET_PATTERNS + DEFAULT_PII_PATTERNS
 
 
-def redact(value: Any, patterns: list[str] = DEFAULT_SECRET_PATTERNS) -> Any:
+def redact(value: Any, patterns: list[str] = DEFAULT_REDACTION_PATTERNS) -> Any:
     """Redact values recursively without breaking otherwise-valid JSON evidence."""
     if isinstance(value, dict):
         return {
             key: (
                 "[REDACTED]"
-                if re.search(r"(?i)(api[_-]?key|authorization|token|password|secret)", key)
+                if re.search(r"(?i)(api[_-]?key|authorization|token|password|secret|email|phone|ssn)", key)
                 else redact(item, patterns)
             )
             for key, item in value.items()

@@ -18,3 +18,7 @@ Release immutable image tags. Roll back Cloud Run traffic to the preceding image
 ## Staging exercise
 
 Before production, deploy the same image to a restricted staging project. Run offline checks, an opt-in bounded live confirmation, denied-budget test, malformed-request test, export permission denial test, Cloud Trace correlation test, and rollback. Record results against the go-live gate.
+
+## Live adapter smoke test
+
+The repository includes a deliberately tiny Vertex validation at `scripts/live_vertex_smoke.py`. It requires `AGENTAXIOM_LIVE_SMOKE=1`, uses `gemini-2.5-flash` in `us-central1`, sends one non-sensitive JSON instruction, caps output at 32 tokens, and declares no tools. It fails unless it receives the expected structured result. Run it only in an isolated project with billing and approved model access.

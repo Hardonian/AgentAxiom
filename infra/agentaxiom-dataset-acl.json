@@ -1,0 +1,9 @@
+{
+  "access": [
+    {"role": "WRITER", "specialGroup": "projectWriters"},
+    {"role": "OWNER", "specialGroup": "projectOwners"},
+    {"role": "OWNER", "userByEmail": "scottrmhardie@gmail.com"},
+    {"role": "READER", "specialGroup": "projectReaders"},
+    {"role": "WRITER", "userByEmail": "agentaxiom-runtime@findingnemos-1e8e5.iam.gserviceaccount.com"}
+  ]
+}

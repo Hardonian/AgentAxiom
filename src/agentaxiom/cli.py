@@ -9,6 +9,7 @@ from .contracts import Contract, evaluate_contract
 from .evidence import write_bundle
 from .minimize import minimize_conversation
 from .models import Transcript
+from .service import main as serve
 
 
 def main() -> int:
@@ -26,7 +27,11 @@ def main() -> int:
     minimize.add_argument("transcript")
     minimize.add_argument("contract")
     minimize.add_argument("--output", required=True)
+    sub.add_parser("serve", help="start the plain-language browser console")
     args = parser.parse_args()
+    if args.command == "serve":
+        serve()
+        return 0
     if args.command == "check":
         transcript = Transcript.from_dict(json.loads(Path(args.transcript).read_text()))
         contract = Contract(**json.loads(Path(args.contract).read_text()))

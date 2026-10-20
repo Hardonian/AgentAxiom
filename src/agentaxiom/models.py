@@ -6,6 +6,15 @@ from hashlib import sha256
 from typing import Any, Literal
 
 
+class TranscriptValidationError(ValueError):
+    """Raised when untrusted transcript data is not safe to evaluate."""
+
+
+MAX_TURNS = 100
+MAX_TEXT_CHARS = 200_000
+MAX_TOOL_CALLS = 100
+
+
 def stable_hash(value: Any) -> str:
     import json
 
@@ -77,6 +86,7 @@ class Transcript:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Transcript:
+        validate_transcript_data(data)
         scenario = Scenario(
             turns=[Turn(**turn) for turn in data["scenario"]["turns"]],
             name=data["scenario"]["name"],
@@ -87,3 +97,34 @@ class Transcript:
             invocation=Invocation(**data["invocation"]),
             schema_version=data.get("schema_version", "v1"),
         )
+
+
+def validate_transcript_data(data: Any) -> None:
+    """Bound and validate untrusted JSON before it becomes a transcript object."""
+    if not isinstance(data, dict):
+        raise TranscriptValidationError("transcript must be a JSON object")
+    scenario, invocation = data.get("scenario"), data.get("invocation")
+    if not isinstance(scenario, dict) or not isinstance(invocation, dict):
+        raise TranscriptValidationError("transcript requires scenario and invocation objects")
+    if not isinstance(scenario.get("name"), str) or not scenario["name"].strip():
+        raise TranscriptValidationError("scenario.name must be a non-empty string")
+    turns = scenario.get("turns")
+    if not isinstance(turns, list) or not turns or len(turns) > MAX_TURNS:
+        raise TranscriptValidationError(f"scenario.turns must contain 1 to {MAX_TURNS} turns")
+    for index, turn in enumerate(turns):
+        if not isinstance(turn, dict) or turn.get("role") not in {"system", "user", "assistant", "tool"}:
+            raise TranscriptValidationError(f"turn {index} has an invalid role")
+        if turn.get("content") is not None and (
+            not isinstance(turn["content"], str) or len(turn["content"]) > MAX_TEXT_CHARS
+        ):
+            raise TranscriptValidationError(f"turn {index} content must be text under {MAX_TEXT_CHARS} characters")
+    for attribute in ("model", "region"):
+        if not isinstance(invocation.get(attribute), str) or not invocation[attribute].strip():
+            raise TranscriptValidationError(f"invocation.{attribute} must be a non-empty string")
+    tool_calls = invocation.get("tool_calls", [])
+    if not isinstance(tool_calls, list) or len(tool_calls) > MAX_TOOL_CALLS:
+        raise TranscriptValidationError(f"invocation.tool_calls must contain at most {MAX_TOOL_CALLS} calls")
+    for attribute in ("latency_ms", "estimated_cost_usd"):
+        value = invocation.get(attribute, 0)
+        if not isinstance(value, (int, float)) or value < 0:
+            raise TranscriptValidationError(f"invocation.{attribute} must be a non-negative number")

@@ -63,6 +63,19 @@ docker run -p 8080:8080 agentaxiom
 
 `GET /healthz` returns readiness. `POST /evaluate` never invokes a model; evidence writing is optional and defaults to ephemeral container storage.
 
+### No-code checkup screen
+
+Open the evaluator's root URL to use the built-in plain-language console. It lets non-technical teammates upload a saved run and its rule file, see a simple pass/fail explanation, compare two runs, and download a shareable result. With a local install, start it with:
+
+```bash
+agentaxiom serve
+# Then open http://localhost:8080
+```
+
+The screen uses the same offline evaluator and does not make model calls.
+
+It is designed for a simple hand-off: an engineer records the run and writes the rules once; anyone on the team can then use the browser screen to review the result.
+
 ## Regression workflow
 
 1. Capture a sanitized `Transcript` after an agent response, including the exact tools, provider model, region, generation settings and ADK version.

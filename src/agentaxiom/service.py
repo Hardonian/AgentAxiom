@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from importlib.resources import files
 
 from .comparison import ComparisonPolicy, compare
 from .contracts import Contract, evaluate_contract
@@ -14,6 +15,9 @@ from .models import Transcript
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/":
+            self._html(files("agentaxiom.ui").joinpath("index.html").read_text(encoding="utf-8"))
+            return
         if self.path != "/healthz":
             self.send_error(404)
             return
@@ -24,7 +28,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         try:
+            if self.headers.get("Content-Type", "").split(";", 1)[0] != "application/json":
+                raise ValueError("Content-Type must be application/json")
             size = int(self.headers.get("Content-Length", "0"))
+            if size <= 0:
+                raise ValueError("request body is required")
             if size > 2_000_000:
                 raise ValueError("request exceeds 2 MB")
             body = json.loads(self.rfile.read(size))
@@ -59,6 +67,24 @@ class Handler(BaseHTTPRequestHandler):
         data = json.dumps(payload).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _html(self, content):
+        data = content.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; connect-src 'self'",
+        )
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)

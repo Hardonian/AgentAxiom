@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from .models import Scenario, Transcript
+from .models import Invocation, Scenario, Transcript
 
 
 def minimize_conversation(recorded: Transcript, still_fails: Callable[[Transcript], bool]) -> Transcript:
@@ -24,3 +24,15 @@ def minimize_conversation(recorded: Transcript, still_fails: Callable[[Transcrip
                 break
             granularity = min(len(turns), granularity * 2)
     return Transcript(Scenario(recorded.scenario.name, turns, recorded.scenario.metadata), recorded.invocation)
+
+
+def minimize_with_replay(
+    recorded: Transcript, replay: Callable[[Scenario], Invocation], still_fails: Callable[[Transcript], bool]
+) -> Transcript:
+    """Minimize only when each candidate is freshly replayed by the caller."""
+
+    def verified_failure(candidate: Transcript) -> bool:
+        fresh = Transcript(candidate.scenario, replay(candidate.scenario), candidate.schema_version)
+        return still_fails(fresh)
+
+    return minimize_conversation(recorded, verified_failure)
