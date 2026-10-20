@@ -5,6 +5,7 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from .comparison import ComparisonPolicy, compare
 from .contracts import Contract, evaluate_contract
 from .evidence import write_bundle
 from .models import Transcript
@@ -17,18 +18,22 @@ class Handler(BaseHTTPRequestHandler):
         self._reply(200, {"ok": True})
 
     def do_POST(self):
-        if self.path != "/evaluate":
+        if self.path not in {"/evaluate", "/compare"}:
             self.send_error(404); return
         try:
             size = int(self.headers.get("Content-Length", "0"))
             if size > 2_000_000: raise ValueError("request exceeds 2 MB")
             body = json.loads(self.rfile.read(size))
+            if self.path == "/compare":
+                result = compare(Transcript.from_dict(body["baseline"]), Transcript.from_dict(body["candidate"]), ComparisonPolicy(**body.get("policy", {})))
+                self._reply(200, {"equivalent": result.equivalent, "regressions": result.regressions}); return
             transcript = Transcript.from_dict(body["transcript"])
+            transcript.invocation.trace_id = transcript.invocation.trace_id or self.headers.get("X-Cloud-Trace-Context", "").split("/")[0] or None
             result = evaluate_contract(transcript, Contract(**body["contract"]))
             if body.get("write_evidence"):
-                write_bundle(body.get("evidence_dir", "/tmp/agentaxiom-evidence"), transcript, result)
-            self._reply(200, {"passed": result.passed, "violations": result.violations, "prompt_hash": transcript.scenario.prompt_hash})
-        except (KeyError, TypeError, ValueError) as exc:
+                write_bundle(os.environ.get("AGENTAXIOM_EVIDENCE_DIR", "/tmp/agentaxiom-evidence"), transcript, result)
+            self._reply(200, {"passed": result.passed, "violations": result.violations, "prompt_hash": transcript.scenario.prompt_hash, "trace_id": transcript.invocation.trace_id})
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             self._reply(400, {"error": str(exc)})
 
     def _reply(self, status, payload):

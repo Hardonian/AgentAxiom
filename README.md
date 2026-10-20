@@ -14,6 +14,8 @@ AgentAxiom records a scenario's prompt hash, model/provider identity, region, ge
 - Delta-debug conversation minimization for reproducible failing traces.
 - Sanitized JSON and HTML evidence bundles.
 - Pytest fixture, CLI, and GitHub Actions workflow.
+- Deterministic baseline/candidate comparisons with narrowly configurable noise paths.
+- Per-tool argument schemas, allowed citation domains, evidence checksums, and Cloud Trace correlation IDs.
 
 ## Quick start
 
@@ -29,6 +31,8 @@ Try the included complete offline path:
 
 ```bash
 python -m agentaxiom.cli check examples/fixture.json examples/contract.json
+python -m agentaxiom.cli compare examples/fixture.json examples/fixture.json
+agentaxiom minimize failing.json contract.json --output minimized.json
 ```
 
 ## Live provider boundary
@@ -56,3 +60,13 @@ docker run -p 8080:8080 agentaxiom
 ```
 
 `GET /healthz` returns readiness. `POST /evaluate` never invokes a model; evidence writing is optional and defaults to ephemeral container storage.
+
+## Regression workflow
+
+1. Capture a sanitized `Transcript` after an agent response, including the exact tools, provider model, region, generation settings and ADK version.
+2. Commit it as an offline fixture and pair it with a `Contract`.
+3. Run `agentaxiom check` in CI. Failed runs write a self-contained, checksumed evidence bundle.
+4. Use `agentaxiom compare baseline.json candidate.json` when validating a model, region, prompt, or dependency upgrade. For a failure whose trigger is independent of deleted context, use `agentaxiom minimize` to delta-debug the trace.
+5. Only for a bounded confirmation, create a `ReplayRunner` with `live_verification=True`, a nonzero call limit, and an explicit cost ceiling.
+
+The root [GitHub Action](action.yml) accepts a transcript and contract path for use from another repository.

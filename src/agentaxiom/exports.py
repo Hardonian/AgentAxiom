@@ -6,6 +6,7 @@ from dataclasses import asdict
 from typing import Any
 
 from .contracts import ContractResult
+from .evidence import redact
 from .models import Transcript
 
 def export_gcs(bucket: str, prefix: str, transcript: Transcript, result: ContractResult) -> str:
@@ -14,7 +15,8 @@ def export_gcs(bucket: str, prefix: str, transcript: Transcript, result: Contrac
     except ImportError as exc:
         raise ImportError("Install AgentAxiom's export extra: pip install -e '.[export]'") from exc
     name = f"{prefix.strip('/')}/{transcript.scenario.name}/evidence.json"
-    storage.Client().bucket(bucket).blob(name).upload_from_string(json.dumps({"transcript": transcript.to_dict(), "result": asdict(result)}, default=str), content_type="application/json")
+    payload = redact({"transcript": transcript.to_dict(), "result": asdict(result)})
+    storage.Client().bucket(bucket).blob(name).upload_from_string(json.dumps(payload, default=str), content_type="application/json")
     return f"gs://{bucket}/{name}"
 
 def export_bigquery(table: str, transcript: Transcript, result: ContractResult) -> None:

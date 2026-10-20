@@ -1,0 +1,26 @@
+name: AgentAxiom contract check
+description: Evaluate a recorded AgentAxiom transcript against a contract and upload evidence.
+inputs:
+  transcript:
+    description: Path to recorded transcript JSON.
+    required: true
+  contract:
+    description: Path to contract JSON.
+    required: true
+  evidence-dir:
+    description: Evidence artifact directory.
+    required: false
+    default: agentaxiom-evidence
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: python -m pip install .
+    - shell: bash
+      run: python -m agentaxiom.cli check '${{ inputs.transcript }}' '${{ inputs.contract }}' --evidence-dir '${{ inputs.evidence-dir }}'
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: agentaxiom-evidence
+        path: ${{ inputs.evidence-dir }}
+        if-no-files-found: ignore

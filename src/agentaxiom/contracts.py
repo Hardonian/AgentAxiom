@@ -15,6 +15,7 @@ class Contract:
     required_tools: list[str] = field(default_factory=list)
     forbidden_tools: list[str] = field(default_factory=list)
     tool_argument_schemas: dict[str, dict[str, Any]] = field(default_factory=dict)
+    tool_output_schemas: dict[str, dict[str, Any]] = field(default_factory=dict)
     require_citations: bool = False
     allowed_citation_domains: list[str] = field(default_factory=list)
     minimum_citations: int = 0
@@ -50,6 +51,10 @@ def evaluate_contract(transcript: Transcript, contract: Contract) -> ContractRes
             arguments = call.get("arguments", call.get("function", {}).get("arguments", {}))
             for error in Draft202012Validator(schema).iter_errors(arguments):
                 violations.append({"kind": "tool_arguments", "tool": name, "path": list(error.path), "message": error.message})
+    for turn in transcript.scenario.turns:
+        if turn.role == "tool" and turn.tool_name in contract.tool_output_schemas:
+            for error in Draft202012Validator(contract.tool_output_schemas[turn.tool_name]).iter_errors(turn.tool_output):
+                violations.append({"kind": "tool_output", "tool": turn.tool_name, "path": list(error.path), "message": error.message})
     if contract.require_citations and not inv.citations:
         violations.append({"kind": "grounding", "message": "response has no citations"})
     if len(inv.citations) < contract.minimum_citations:
