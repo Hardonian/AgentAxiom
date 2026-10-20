@@ -11,4 +11,12 @@ terraform plan -var project_id=PROJECT -var image=IMAGE@sha256:DIGEST -var evide
 terraform apply
 ```
 
+The checked-in dashboard can be created independently after the service exists:
+
+```bash
+gcloud monitoring dashboards create --project=PROJECT --config-from-file=monitoring-dashboard.yaml
+```
+
+It shows Cloud Run request and 5xx rates. Alert delivery remains intentionally disabled until an approved notification channel and on-call owner are supplied through `alert_notification_channel`.
+
 Do not apply this configuration to production until the staging exercise in [operations](../docs/OPERATIONS.md) is complete. Additional IAM bindings are deliberately not embedded: bind only the caller service accounts that need Cloud Run invocation, GCS writes, and BigQuery inserts.

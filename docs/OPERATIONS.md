@@ -21,4 +21,6 @@ Before production, deploy the same image to a restricted staging project. Run of
 
 ## Live adapter smoke test
 
-The repository includes a deliberately tiny Vertex validation at `scripts/live_vertex_smoke.py`. It requires `AGENTAXIOM_LIVE_SMOKE=1`, uses `gemini-2.5-flash` in `us-central1`, sends one non-sensitive JSON instruction, caps output at 32 tokens, and declares no tools. It fails unless it receives the expected structured result. Run it only in an isolated project with billing and approved model access.
+The repository includes a deliberately tiny Vertex validation at `scripts/live_vertex_smoke.py`. It requires `AGENTAXIOM_LIVE_SMOKE=1` and an explicit `GOOGLE_CLOUD_PROJECT`, uses `gemini-2.5-flash` in `us-central1` (or `AGENTAXIOM_VERTEX_REGION`), sends one non-sensitive JSON instruction, caps output at 32 tokens, and declares no tools. It fails unless it receives the expected structured result. Run it only in an isolated project with billing and approved model access.
+
+`scripts/live_export_smoke.py` similarly requires `AGENTAXIOM_EXPORT_SMOKE=1`, `AGENTAXIOM_EXPORT_BUCKET`, and `AGENTAXIOM_EXPORT_TABLE`; it exports a synthetic record containing an email-shaped value, which must be redacted in the resulting GCS evidence object and represented as one BigQuery summary row.

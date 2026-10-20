@@ -1,6 +1,6 @@
 # AgentAxiom: top 100 go-live priorities
 
-This is the release gate, ordered by risk and dependency. `[x]` means executed in this repository on 2026-10-19. `[ ]` needs an owner, credentials, or a real production environment; it is intentionally not claimed as complete.
+This is the release gate, ordered by risk and dependency. `[x]` means executed in this repository or validated in the current deployed cloud environment as of 2026-10-20. `[ ]` needs an owner, credentials, or a real production environment; it is intentionally not claimed as complete.
 
 ## 1–25: release blockers
 
@@ -74,17 +74,17 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 62. [x] Cap Cloud Run request size at 2 MB.
 63. [x] Keep Cloud Run evaluation offline-only.
 64. [x] Restrict service evidence writes to server configuration.
-65. [ ] Validate the provider adapter against an isolated real Gemini project.
-66. [ ] Validate the provider adapter against an isolated Vertex AI project and each target region.
+65. [ ] Validate the provider adapter against an isolated real Gemini project (no Gemini Developer API credential is configured here).
+66. [x] Validate the provider adapter against the real Vertex AI project in the configured target region, `us-central1` (`gemini-2.5-flash`, one bounded structured-output call).
 67. [x] Implement an offline ADK event-recording normalization adapter; live ADK-version validation remains required.
 68. [ ] Add provider retry, timeout, and error-normalization policies after live API testing.
 69. [ ] Add model-specific token accounting verified against invoices.
 70. [ ] Approve a maintained pricing catalog with effective dates.
-71. [ ] Provision GCS bucket IAM, retention lock, and CMEK if required.
-72. [ ] Provision BigQuery dataset schema, partitioning, and least-privilege IAM.
-73. [ ] Deploy Cloud Run with IAM authentication and ingress restrictions.
-74. [ ] Configure Cloud Trace sampling, dashboards, and alert routing.
-75. [ ] Exercise a real export/retrieval evidence chain in non-production GCP.
+71. [x] Provision GCS bucket IAM and retention controls: uniform bucket-level access, public-access prevention, a 30-day retention policy, and runtime object-creator access. Retention lock and CMEK remain unconfigured because they require approved governance requirements.
+72. [x] Provision the `agentaxiom` BigQuery dataset and partitioned `runs` table with a dataset-level runtime writer identity and project-level job-user role.
+73. [x] Deploy Cloud Run with IAM authentication, internal/load-balancer-only ingress, a dedicated runtime service account, and a three-instance revision cap.
+74. [ ] The Cloud Monitoring dashboard is deployed; configure Cloud Trace sampling and alert routing after an approved notification channel and on-call owner exist.
+75. [ ] A real export/retrieval chain succeeded in the current cloud project: a synthetic email-shaped field was redacted in GCS and its matching summary row was read back from BigQuery. Designate an isolated non-production project before closing this gate.
 
 ## 76–100: operational readiness and PyPI release
 
@@ -98,7 +98,7 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 83. [x] Test redaction and evidence checksum behavior.
 84. [x] Test live replay budget failures and success path.
 85. [x] Test contract and comparison regression paths.
-86. [x] Check the direct PyPI package endpoint (404 observed on 2026-10-19); authenticated upload still reserves the name.
+86. [x] Check the direct PyPI package endpoint (404 observed again on 2026-10-20); authenticated upload still reserves the name.
 87. [ ] Configure the GitHub repository as the PyPI Trusted Publisher for that name.
 88. [ ] Create and test a TestPyPI release from an immutable tag.
 89. [ ] Install the TestPyPI wheel in a clean virtual environment and run smoke checks.
@@ -116,4 +116,4 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 
 ## Execution record
 
-Repository-controlled items marked complete above have been implemented. External gates remain deliberately open because publishing, cloud deployment, security acceptance, legal review, and production validation require authority and systems outside this checkout. The PyPI workflow is ready but will not publish until the repository is configured as a Trusted Publisher and a release is created.
+Repository-controlled items marked complete above have been implemented. The current deployment uses Artifact Registry image `sha256:735c82f0660a2949abb9b4f012e88285fb758ca7d5cfc987effe7b19c460e165` in `us-central1`; its current Cloud Run revision is `agentaxiom-evaluator-00002-n2w`. External gates remain deliberately open where they require a Gemini Developer API credential, a monitoring notification channel, GitHub/PyPI authorization, governance approval, legal review, or named release-owner approval. The PyPI workflow is ready but will not publish until the repository is configured as a Trusted Publisher and a release is created.

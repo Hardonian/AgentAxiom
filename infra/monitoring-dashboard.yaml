@@ -1,0 +1,43 @@
+displayName: AgentAxiom operational dashboard
+gridLayout:
+  widgets:
+    - title: AgentAxiom operational status
+      text:
+        format: MARKDOWN
+        content: |
+          ## AgentAxiom evaluator
+
+          The evaluator is deliberately IAM-protected and available only through internal/load-balancer ingress.
+
+          - Service: `agentaxiom-evaluator` (`us-central1`)
+          - Evidence bucket: `agentaxiom-evidence-findingnemos-1e8e5`
+          - BigQuery table: `agentaxiom.runs`
+          - Investigate failures using the sanitized evidence bundle checksum and Cloud Trace ID.
+
+          Alert delivery is intentionally not configured until an approved notification channel and on-call owner exist.
+    - title: Cloud Run request rate
+      xyChart:
+        dataSets:
+          - timeSeriesQuery:
+              timeSeriesFilter:
+                filter: 'metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.label."service_name"="agentaxiom-evaluator"'
+                aggregation:
+                  alignmentPeriod: 60s
+                  perSeriesAligner: ALIGN_RATE
+                  crossSeriesReducer: REDUCE_SUM
+        yAxis:
+          label: requests / second
+          scale: LINEAR
+    - title: Cloud Run 5xx rate
+      xyChart:
+        dataSets:
+          - timeSeriesQuery:
+              timeSeriesFilter:
+                filter: 'metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.label."service_name"="agentaxiom-evaluator" metric.label."response_code_class"="5xx"'
+                aggregation:
+                  alignmentPeriod: 60s
+                  perSeriesAligner: ALIGN_RATE
+                  crossSeriesReducer: REDUCE_SUM
+        yAxis:
+          label: errors / second
+          scale: LINEAR
