@@ -84,7 +84,7 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 72. [x] Provision the `agentaxiom` BigQuery dataset and partitioned `runs` table with a dataset-level runtime writer identity and project-level job-user role.
 73. [x] Deploy Cloud Run with IAM authentication, internal/load-balancer-only ingress, a dedicated runtime service account, and a three-instance revision cap.
 74. [ ] The Cloud Monitoring dashboard is deployed; configure Cloud Trace sampling and alert routing after an approved notification channel and on-call owner exist.
-75. [ ] A real export/retrieval chain succeeded in the current cloud project: a synthetic email-shaped field was redacted in GCS and its matching summary row was read back from BigQuery. Designate an isolated non-production project before closing this gate.
+75. [x] Validate the real GCS/BigQuery export and retrieval chain in an isolated non-production project: `agentaxiom-stg-20261020` stored the redacted synthetic record at `smoke/export-smoke-20261020T201012Z/evidence.json`, and its matching `agentaxiom.runs` summary row was read back on 2026-10-20.
 
 ## 76–100: operational readiness and PyPI release
 
@@ -100,8 +100,8 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 85. [x] Test contract and comparison regression paths.
 86. [x] Verify the direct PyPI package endpoint and artifacts for `agentaxiom` 0.1.0 (wheel and source distribution published on 2026-10-20).
 87. [x] Configure the GitHub repository as the PyPI Trusted Publisher for that name (verified by the `v0.1.0` release on 2026-10-20).
-88. [x] Create and test a TestPyPI release from an immutable tag (`v0.1.0`, workflow run 39461573831 on 2026-10-20, Trusted Publisher OIDC, no stored token).
-89. [x] Install the TestPyPI wheel in a clean virtual environment and run smoke checks (`agentaxiom==0.1.0` from `test.pypi.org` in a fresh venv; `agentaxiom check` on the shipped fixture/contract returned `{"passed": true, "violations": []}` and wrote a checksummed evidence bundle on 2026-10-20).
+88. [ ] Create and test a TestPyPI release from an immutable tag. The `v0.1.0` dispatch (run `39461573831`, 2026-10-20) failed and `agentaxiom` is not published on TestPyPI; configure the TestPyPI Trusted Publisher, then rerun the workflow.
+89. [ ] Install the TestPyPI wheel in a clean virtual environment and run smoke checks after a successful TestPyPI publication.
 90. [x] Run a clean-environment `pip-audit`; no known vulnerabilities remain after bootstrap pip update.
 91. [x] Configure and verify release SBOM and provenance-attestation generation.
 92. [x] Sign release artifacts with PyPI Trusted Publisher PEP 740/Sigstore attestations and document verification steps (verified for both `0.1.0` distributions on 2026-10-20).
@@ -110,10 +110,10 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 95. [x] Establish SLO targets for CI, evaluator availability, and export delay.
 96. [ ] Add production alerting for failed exports, budget denial spikes, and service errors.
 97. [x] Document the threat model for fixture/evidence data and multi-tenant service access.
-98. [ ] Complete a staging load, failure, rollback, and disaster-recovery exercise.
+98. [ ] Complete a staging load, failure, rollback, and disaster-recovery exercise. The isolated staging traffic rollback was exercised on 2026-10-20 (`agentaxiom-evaluator-00002-hlc` restored to `agentaxiom-evaluator-00001-bk2`); load, application-level failure, and disaster-recovery validation remain.
 99. [ ] Obtain named release-owner and security-owner go/no-go approval.
 100. [ ] Publish PyPI `1.0.0` only after items 25, 45–50, 65–75, and 86–99 are accepted or complete.
 
 ## Execution record
 
-Repository-controlled items marked complete above have been implemented. The current deployment uses Artifact Registry image `sha256:735c82f0660a2949abb9b4f012e88285fb758ca7d5cfc987effe7b19c460e165` in `us-central1`; its current Cloud Run revision is `agentaxiom-evaluator-00002-n2w`. The GitHub/PyPI Trusted Publisher path was verified by publishing `agentaxiom` 0.1.0 from release `v0.1.0` on 2026-10-20: the release job built the distributions, attached an SBOM, generated provenance, and uploaded the wheel and source distribution; a clean-environment PyPI install completed the offline contract smoke check. The TestPyPI Trusted Publisher path was verified the same day from the immutable `v0.1.0` tag (workflow dispatch, run 39461573831), followed by a clean-venv install from `test.pypi.org` and a passing offline contract smoke check. External gates remain deliberately open where they require a Gemini Developer API credential, a monitoring notification channel, governance approval, legal review, or named release-owner approval. The final 1.0.0 release remains gated by the items specified above.
+Repository-controlled items marked complete above have been implemented. The production deployment uses Artifact Registry image `sha256:735c82f0660a2949abb9b4f012e88285fb758ca7d5cfc987effe7b19c460e165` in `us-central1`; its current Cloud Run revision is `agentaxiom-evaluator-00002-n2w`. The isolated staging project is `agentaxiom-stg-20261020` (`AgentAxiom Staging`): it has a private `agentaxiom-evaluator` revision `agentaxiom-evaluator-00001-bk2`, dedicated runtime identity, versioned public-access-prevented evidence bucket, partitioned BigQuery table, and dashboard. Its 2026-10-20 export smoke redacted the synthetic email-shaped value in GCS and read back the matching BigQuery summary row. The GitHub/PyPI Trusted Publisher path was verified by publishing `agentaxiom` 0.1.0 from release `v0.1.0` on 2026-10-20: the release job built the distributions, attached an SBOM, generated provenance, and uploaded the wheel and source distribution; a clean-environment PyPI install completed the offline contract smoke check. The TestPyPI dispatch from `v0.1.0` (run `39461573831`) failed, and the TestPyPI package endpoint was still absent when checked on 2026-10-20; its Trusted Publisher configuration and clean-install validation remain open. External gates remain deliberately open where they require a Gemini Developer API credential, a monitoring notification channel, governance approval, legal review, or named release-owner approval. The final 1.0.0 release remains gated by the items specified above.
