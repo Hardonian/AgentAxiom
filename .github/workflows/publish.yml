@@ -3,6 +3,7 @@ on:
   release:
     types: [published]
 permissions:
+  attestations: write
   contents: read
   id-token: write
 jobs:

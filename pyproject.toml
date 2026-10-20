@@ -26,10 +26,10 @@ classifiers = [
 dependencies = ["jsonschema>=4.23"]
 
 [project.urls]
-Homepage = "https://github.com/scott/AgentAxiom"
-Repository = "https://github.com/scott/AgentAxiom"
-Issues = "https://github.com/scott/AgentAxiom/issues"
-Changelog = "https://github.com/scott/AgentAxiom/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Hardonian/AgentAxiom"
+Repository = "https://github.com/Hardonian/AgentAxiom"
+Issues = "https://github.com/Hardonian/AgentAxiom/issues"
+Changelog = "https://github.com/Hardonian/AgentAxiom/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 vertex = ["google-genai>=1.0"]
