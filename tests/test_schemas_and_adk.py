@@ -6,7 +6,6 @@ from jsonschema import Draft202012Validator
 from agentaxiom.models import Scenario, Turn
 from agentaxiom.providers import ADKRecorder
 
-
 ROOT = Path(__file__).parents[1]
 
 
