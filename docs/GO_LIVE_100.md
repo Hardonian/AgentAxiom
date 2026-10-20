@@ -98,12 +98,12 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 83. [x] Test redaction and evidence checksum behavior.
 84. [x] Test live replay budget failures and success path.
 85. [x] Test contract and comparison regression paths.
-86. [x] Check the direct PyPI package endpoint (404 observed again on 2026-10-20); authenticated upload still reserves the name.
-87. [ ] Configure the GitHub repository as the PyPI Trusted Publisher for that name.
+86. [x] Verify the direct PyPI package endpoint and artifacts for `agentaxiom` 0.1.0 (wheel and source distribution published on 2026-10-20).
+87. [x] Configure the GitHub repository as the PyPI Trusted Publisher for that name (verified by the `v0.1.0` release on 2026-10-20).
 88. [ ] Create and test a TestPyPI release from an immutable tag.
 89. [ ] Install the TestPyPI wheel in a clean virtual environment and run smoke checks.
 90. [x] Run a clean-environment `pip-audit`; no known vulnerabilities remain after bootstrap pip update.
-91. [x] Configure release SBOM and provenance-attestation generation.
+91. [x] Configure and verify release SBOM and provenance-attestation generation.
 92. [ ] Sign release artifacts and document verification steps.
 93. [x] Define supported-version, deprecation, security, and incident-response policy.
 94. [ ] Obtain legal review of license, privacy, export, and AI-use claims.
@@ -116,4 +116,4 @@ This is the release gate, ordered by risk and dependency. `[x]` means executed i
 
 ## Execution record
 
-Repository-controlled items marked complete above have been implemented. The current deployment uses Artifact Registry image `sha256:735c82f0660a2949abb9b4f012e88285fb758ca7d5cfc987effe7b19c460e165` in `us-central1`; its current Cloud Run revision is `agentaxiom-evaluator-00002-n2w`. External gates remain deliberately open where they require a Gemini Developer API credential, a monitoring notification channel, GitHub/PyPI authorization, governance approval, legal review, or named release-owner approval. The PyPI workflow is ready but will not publish until the repository is configured as a Trusted Publisher and a release is created.
+Repository-controlled items marked complete above have been implemented. The current deployment uses Artifact Registry image `sha256:735c82f0660a2949abb9b4f012e88285fb758ca7d5cfc987effe7b19c460e165` in `us-central1`; its current Cloud Run revision is `agentaxiom-evaluator-00002-n2w`. The GitHub/PyPI Trusted Publisher path was verified by publishing `agentaxiom` 0.1.0 from release `v0.1.0` on 2026-10-20: the release job built the distributions, attached an SBOM, generated provenance, and uploaded the wheel and source distribution; a clean-environment PyPI install completed the offline contract smoke check. External gates remain deliberately open where they require a Gemini Developer API credential, a monitoring notification channel, governance approval, legal review, or named release-owner approval. The final 1.0.0 release remains gated by the items specified above.
