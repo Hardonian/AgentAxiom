@@ -209,3 +209,4 @@ def record_gemini(
             client.models.generate_content = orig_generate
     else:
         yield recording
+
