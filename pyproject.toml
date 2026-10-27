@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Testing",
 ]
 dependencies = ["jsonschema>=4.23"]
@@ -34,6 +35,7 @@ Changelog = "https://github.com/Hardonian/AgentAxiom/blob/main/CHANGELOG.md"
 [project.optional-dependencies]
 vertex = ["google-genai>=1.0"]
 export = ["google-cloud-bigquery>=3.0", "google-cloud-storage>=2.0"]
+all = ["google-genai>=1.0", "google-cloud-bigquery>=3.0", "google-cloud-storage>=2.0"]
 test = ["pytest>=8.0"]
 lint = ["ruff>=0.8"]
 
@@ -45,7 +47,11 @@ agentaxiom = "agentaxiom.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentaxiom"]
-include = ["src/agentaxiom/ui/*.html"]
+include = [
+  "src/agentaxiom/ui/*.html",
+  "src/agentaxiom/schemas/*.json",
+  "src/agentaxiom/catalogs/*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

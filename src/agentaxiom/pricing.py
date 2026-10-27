@@ -37,6 +37,20 @@ class PricingCatalog:
             approval_status=data.get("approval_status"),
         )
 
+    @classmethod
+    def bundled(cls, name: str = "gemini-catalog-2026-10") -> PricingCatalog:
+        """Loads a bundled pricing catalog included with AgentAxiom."""
+        from .catalogs import get_catalog_data
+
+        data = get_catalog_data(name)
+        rates = {model_name: ModelPricing(**spec) for model_name, spec in data.get("rates", {}).items()}
+        return cls(
+            rates=rates,
+            version=data.get("version", "bundled"),
+            effective_date=data.get("effective_date"),
+            approval_status=data.get("approval_status"),
+        )
+
     def estimate(self, model: str, usage: dict[str, int]) -> float:
         """Returns zero for unknown models: caller must never treat it as a quote."""
         rate = self.rates.get(model)

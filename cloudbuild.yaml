@@ -1,5 +1,5 @@
-# Google Cloud Build pipeline for AgentAxiom contract testing
-# Runs offline-first regression verification and publishes evidence to Google Cloud Storage.
+# Google Cloud Build pipeline for AgentAxiom contract testing and container deployment
+# Runs linting, deterministic tests, contract gates, wheel build, and container build.
 
 steps:
   # 1. Prepare environment and dependencies
@@ -42,12 +42,39 @@ steps:
         pip install -e .
         agentaxiom check examples/fixture.json examples/contract.json --evidence-dir=agentaxiom-evidence
 
-# Upload sanitized evidence bundles as build artifacts
+  # 5. Build Python distribution and verify metadata
+  - name: 'python:3.12-slim'
+    id: 'package-build'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install build twine
+        python -m build
+        python -m twine check dist/*
+
+  # 6. Build container image for Cloud Run Evaluator
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'container-build'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/${PROJECT_ID}/agentaxiom/evaluator:${BUILD_ID}'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/${PROJECT_ID}/agentaxiom/evaluator:latest'
+      - '.'
+
+# Upload sanitized evidence bundles and wheel distributions as build artifacts
 artifacts:
   objects:
     location: 'gs://${PROJECT_ID}-agentaxiom-builds/${BUILD_ID}'
-    paths: ['agentaxiom-evidence/**']
+    paths:
+      - 'agentaxiom-evidence/**'
+      - 'dist/**'
+
+images:
+  - 'us-central1-docker.pkg.dev/${PROJECT_ID}/agentaxiom/evaluator:${BUILD_ID}'
+  - 'us-central1-docker.pkg.dev/${PROJECT_ID}/agentaxiom/evaluator:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
-

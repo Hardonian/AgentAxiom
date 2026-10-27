@@ -269,3 +269,17 @@ def test_pytest_plugin_agent_contract_convenience(agent_contract):
     # Dictionary contract input works seamlessly
     res = agent_contract(t, {"name": "dict-contract"})
     assert res.passed
+
+
+def test_bundled_assets():
+    from agentaxiom.schemas import get_schema
+
+    contract_schema = get_schema("contract.v1")
+    assert contract_schema["title"] == "AgentAxiom Contract v1"
+
+    transcript_schema = get_schema("transcript.v1")
+    assert transcript_schema["title"] == "AgentAxiom Transcript v1"
+
+    catalog = PricingCatalog.bundled()
+    assert "gemini-2.5-flash" in catalog.rates
+    assert catalog.rates["gemini-2.5-flash"].cached_read_per_million_usd == 0.075
