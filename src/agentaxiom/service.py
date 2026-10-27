@@ -6,11 +6,17 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
+from typing import Any
 
 from .comparison import ComparisonPolicy, compare
 from .contracts import Contract, evaluate_contract
 from .evidence import write_bundle
+from .exports import format_gcp_log_entry
 from .models import Transcript
+
+
+def _emit_gcp_log(entry: dict[str, Any]) -> None:
+    print(json.dumps(entry, default=str), flush=True)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -51,6 +57,14 @@ class Handler(BaseHTTPRequestHandler):
             result = evaluate_contract(transcript, Contract(**body["contract"]))
             if body.get("write_evidence"):
                 write_bundle(os.environ.get("AGENTAXIOM_EVIDENCE_DIR", "/tmp/agentaxiom-evidence"), transcript, result)
+
+            log_entry = format_gcp_log_entry(
+                transcript,
+                result,
+                project_id=os.environ.get("GOOGLE_CLOUD_PROJECT"),
+            )
+            _emit_gcp_log(log_entry)
+
             self._reply(
                 200,
                 {
@@ -61,6 +75,11 @@ class Handler(BaseHTTPRequestHandler):
                 },
             )
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            _emit_gcp_log({
+                "severity": "WARNING",
+                "message": f"Bad evaluation request: {exc}",
+                "component": "agentaxiom-evaluator",
+            })
             self._reply(400, {"error": str(exc)})
 
     def _reply(self, status, payload):

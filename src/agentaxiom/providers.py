@@ -1,7 +1,7 @@
 """Optional Gemini/Vertex recording adapters.
 
 The adapter intentionally converts provider responses to AgentAxiom's stable
-evidence format at the boundary.  It does not execute tools: callers own tool
+evidence format at the boundary. It does not execute tools: callers own tool
 execution and can append the resulting calls to the recorded Invocation.
 """
 
@@ -25,7 +25,7 @@ class ProviderError(RuntimeError):
 
     ``kind`` is one of ``timeout``, ``network``, ``rate_limited``,
     ``invalid_request``, ``permission``, ``not_found``, ``server``,
-    ``client``, or ``unknown``.  Unknown errors are never retried: callers
+    ``client``, or ``unknown``. Unknown errors are never retried: callers
     fail closed instead of guessing.
     """
 
@@ -188,12 +188,16 @@ class GeminiVertexClient:
         self.retry_policy = retry_policy or RetryPolicy()
 
     def invoke(self, scenario: Scenario) -> Invocation:
-        # Gemini's contents accept the normal chat turns as dicts.
-        contents = [
-            {"role": "model" if turn.role == "assistant" else turn.role, "parts": [{"text": turn.content or ""}]}
-            for turn in scenario.turns
-            if turn.role in {"user", "model", "assistant"}
-        ]
+        # Formulate contents respecting multimodal parts and roles
+        contents = []
+        for turn in scenario.turns:
+            if turn.role in {"user", "model", "assistant"}:
+                role = "model" if turn.role == "assistant" else turn.role
+                if turn.parts:
+                    contents.append({"role": role, "parts": turn.parts})
+                else:
+                    contents.append({"role": role, "parts": [{"text": turn.content or ""}]})
+
         started = time.perf_counter()
         config = {key: value for key, value in self.generation.items() if value is not None}
         if self.tools:
@@ -216,9 +220,15 @@ class GeminiVertexClient:
             for part in parts
             if "function_call" in part
         ]
+
+        thought_parts = [str(part.get("text", "")) for part in parts if part.get("thought") and part.get("text")]
+        thought_text = "\n".join(thought_parts) if thought_parts else None
+
         response_text = getattr(response, "text", None)
         if not response_text:
-            response_text = "\n".join(str(part["text"]) for part in parts if part.get("text")) or None
+            non_thought = [str(part["text"]) for part in parts if not part.get("thought") and part.get("text")]
+            response_text = "\n".join(non_thought) or None
+
         try:
             structured = (
                 json.loads(response_text)
@@ -227,11 +237,29 @@ class GeminiVertexClient:
             )
         except json.JSONDecodeError:
             structured = None
+
+        cached_tokens = usage.get("cached_content_token_count", 0)
+        thoughts_tokens = (
+            usage.get("candidates_token_details", {}).get("thoughts_token_count", 0)
+            or usage.get("thoughts_token_count", 0)
+        )
         token_usage = {
             "input": usage.get("prompt_token_count", 0),
             "output": usage.get("candidates_token_count", 0),
             "total": usage.get("total_token_count", 0),
         }
+        if cached_tokens:
+            token_usage["cached"] = cached_tokens
+        if thoughts_tokens:
+            token_usage["thoughts"] = thoughts_tokens
+
+        grounding_dict = {
+            "web_search_queries": grounding.get("web_search_queries", []),
+            "grounding_chunks": grounding.get("grounding_chunks", []),
+            "grounding_supports": grounding.get("grounding_supports", []),
+            "search_entry_point": grounding.get("search_entry_point", {}),
+        }
+
         return Invocation(
             model=self.model,
             region=self.location,
@@ -240,8 +268,10 @@ class GeminiVertexClient:
             tools=[tool if isinstance(tool, dict) else {"definition": str(tool)} for tool in self.tools],
             response_text=response_text,
             structured_output=structured,
+            thought_text=thought_text,
             tool_calls=tool_calls,
             citations=grounding.get("grounding_chunks", []),
+            grounding=grounding_dict,
             safety={"ratings": candidates[0].get("safety_ratings", []) if candidates else []},
             token_usage=token_usage,
             latency_ms=round((time.perf_counter() - started) * 1000, 2),
