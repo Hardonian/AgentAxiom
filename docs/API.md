@@ -21,6 +21,7 @@
 ## Google GenAI & Vertex AI Recording
 
 - `record_gemini(client, scenario_name="...", metadata=None)` is a drop-in context manager for official `google.genai.Client`:
+
   ```python
   from google import genai
   from agentaxiom import record_gemini

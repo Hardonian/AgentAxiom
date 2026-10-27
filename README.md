@@ -129,6 +129,7 @@ docker run -p 8080:8080 agentaxiom
 ```
 
 Cloud Run emits structured JSON log entries correlated with **Google Cloud Trace**:
+
 ```json
 {
   "severity": "INFO",
