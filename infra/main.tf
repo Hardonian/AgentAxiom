@@ -70,3 +70,37 @@ resource "google_monitoring_alert_policy" "service_errors" {
   }
   notification_channels = [var.alert_notification_channel]
 }
+
+resource "google_monitoring_alert_policy" "budget_denial_spikes" {
+  count        = var.alert_notification_channel == "" ? 0 : 1
+  display_name = "AgentAxiom budget denial and contract violation spikes"
+  combiner     = "OR"
+  conditions {
+    display_name = "High violation rate"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/agentaxiom_violations\" resource.type=\"cloud_run_revision\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 5
+      duration        = "300s"
+      aggregations { alignment_period = "60s", per_series_aligner = "ALIGN_RATE" }
+    }
+  }
+  notification_channels = [var.alert_notification_channel]
+}
+
+resource "google_monitoring_alert_policy" "failed_exports" {
+  count        = var.alert_notification_channel == "" ? 0 : 1
+  display_name = "AgentAxiom export sink failures"
+  combiner     = "OR"
+  conditions {
+    display_name = "Failed GCS or BigQuery exports"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/agentaxiom_export_errors\" resource.type=\"cloud_run_revision\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 1
+      duration        = "300s"
+      aggregations { alignment_period = "60s", per_series_aligner = "ALIGN_RATE" }
+    }
+  }
+  notification_channels = [var.alert_notification_channel]
+}

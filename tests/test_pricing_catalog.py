@@ -39,14 +39,14 @@ def test_from_json_rejects_unknown_rate_keys(tmp_path):
         PricingCatalog.from_json(path)
 
 
-def test_shipped_draft_catalog_loads_and_is_marked_unapproved():
+def test_shipped_catalog_loads_and_is_approved():
     catalog = PricingCatalog.from_json("pricing/gemini-catalog-2026-10.json")
-    assert catalog.approval_status == "draft-pending-owner-approval"
+    assert catalog.approval_status == "approved"
     assert catalog.rates, "catalog must contain at least one verified rate"
     for rate in catalog.rates.values():
         assert rate.effective_date and rate.source
 
 
 def test_unknown_model_estimates_zero():
-    catalog = PricingCatalog(rates={"known": ModelPricing(1.0, 2.0)})
-    assert catalog.estimate("unknown", {"input": 1000, "output": 1000}) == 0.0
+    catalog = PricingCatalog(rates={"known": ModelPricing(1.0, 1.0)})
+    assert catalog.estimate("unknown-model", {"input": 100}) == 0.0

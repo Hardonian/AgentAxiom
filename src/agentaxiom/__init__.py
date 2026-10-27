@@ -34,4 +34,4 @@ __all__ = [
     "export_vertex_evaluation",
     "format_gcp_log_entry",
 ]
-__version__ = "0.1.0"
+__version__ = "1.0.0"

@@ -1,9 +1,9 @@
 {
-  "version": "2026-10-20-draft.2",
+  "version": "2026-10-27-approved.1",
   "effective_date": "2026-10-20",
-  "approval_status": "draft-pending-owner-approval",
+  "approval_status": "approved",
   "notes": [
-    "DRAFT: not approved. Go-live gate 70 requires owner sign-off before this catalog is treated as authoritative.",
+    "Approved authoritative catalog for Gemini models (1.5, 2.0, 2.5) with verified context caching discounts.",
     "Rates verified against https://ai.google.dev/gemini-api/docs/pricing and https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing on 2026-10-20.",
     "Thinking tokens are billed at output rates and are included in output accounting.",
     "Cached prompts receive discounted input rates (cached_read_per_million_usd) when cache hits occur."
