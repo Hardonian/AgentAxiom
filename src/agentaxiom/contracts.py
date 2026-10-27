@@ -23,6 +23,12 @@ class Contract:
     require_citations: bool = False
     allowed_citation_domains: list[str] = field(default_factory=list)
     minimum_citations: int = 0
+    require_context_cache: bool = False
+    min_cached_tokens: int = 0
+    max_thinking_tokens: int | None = None
+    blocked_safety_categories: list[str] = field(default_factory=list)
+    min_grounding_score: float | None = None
+    allowed_grounding_sources: list[str] = field(default_factory=list)
     allowed_safety_actions: list[str] | None = None
     max_latency_ms: float | None = None
     max_cost_usd: float | None = None
@@ -80,6 +86,51 @@ def evaluate_contract(transcript: Transcript, contract: Contract) -> ContractRes
             uri = citation.get("uri") or citation.get("web", {}).get("uri") or ""
             if not uri or urlparse(uri).netloc not in allowed:
                 violations.append({"kind": "citation_domain", "uri": uri, "allowed": sorted(allowed)})
+    if contract.allowed_grounding_sources:
+        from urllib.parse import urlparse
+
+        allowed_sources = set(contract.allowed_grounding_sources)
+        all_chunks = list(inv.citations) + list(inv.grounding.get("grounding_chunks", []))
+        for chunk in all_chunks:
+            uri = chunk.get("uri") or chunk.get("web", {}).get("uri") or chunk.get("retrieved_context", {}).get("uri") or ""
+            domain = urlparse(uri).netloc if uri else ""
+            datastore = chunk.get("retrieved_context", {}).get("rag_corpus_id") or chunk.get("datastore_id") or ""
+            matched = False
+            for allowed_source in allowed_sources:
+                if (domain and domain == allowed_source) or (uri and uri.startswith(allowed_source)) or (datastore and datastore == allowed_source):
+                    matched = True
+                    break
+            if not matched and (uri or datastore):
+                violations.append({"kind": "grounding_source", "source": uri or datastore, "allowed": sorted(allowed_sources)})
+    if contract.min_grounding_score is not None:
+        supports = inv.grounding.get("grounding_supports", [])
+        for support in supports:
+            score = support.get("confidence_score") or support.get("score")
+            if score is not None and score < contract.min_grounding_score:
+                violations.append({"kind": "grounding_score", "actual": score, "minimum": contract.min_grounding_score})
+    if contract.require_context_cache and inv.token_usage.get("cached", 0) <= 0:
+        violations.append({"kind": "context_cache", "message": "expected context cache hit but cached token count is 0"})
+    if contract.min_cached_tokens > 0 and inv.token_usage.get("cached", 0) < contract.min_cached_tokens:
+        violations.append({
+            "kind": "cached_tokens",
+            "actual": inv.token_usage.get("cached", 0),
+            "minimum": contract.min_cached_tokens,
+        })
+    if contract.max_thinking_tokens is not None and inv.token_usage.get("thoughts", 0) > contract.max_thinking_tokens:
+        violations.append({
+            "kind": "thinking_budget",
+            "actual": inv.token_usage.get("thoughts", 0),
+            "maximum": contract.max_thinking_tokens,
+        })
+    if contract.blocked_safety_categories:
+        blocked_cats = set(contract.blocked_safety_categories)
+        ratings = inv.safety.get("ratings", [])
+        for rating in ratings:
+            cat = rating.get("category")
+            prob = rating.get("probability")
+            blocked = rating.get("blocked", False)
+            if cat in blocked_cats and (blocked or prob in {"MEDIUM", "HIGH"}):
+                violations.append({"kind": "safety_category", "category": cat, "probability": prob})
     action = inv.safety.get("action")
     if contract.allowed_safety_actions is not None and action not in contract.allowed_safety_actions:
         violations.append({"kind": "safety", "actual": action, "allowed": contract.allowed_safety_actions})
@@ -96,7 +147,7 @@ def validate_contract(contract: Contract) -> None:
     overlap = set(contract.required_tools) & set(contract.forbidden_tools)
     if overlap:
         raise ContractValidationError(f"tools cannot be both required and forbidden: {sorted(overlap)}")
-    for attribute in ("required_tools", "forbidden_tools", "allowed_citation_domains"):
+    for attribute in ("required_tools", "forbidden_tools", "allowed_citation_domains", "blocked_safety_categories", "allowed_grounding_sources"):
         values = getattr(contract, attribute)
         if not isinstance(values, list) or not all(isinstance(value, str) and value.strip() for value in values):
             raise ContractValidationError(f"contract.{attribute} must be a list of non-empty strings")
@@ -116,6 +167,14 @@ def validate_contract(contract: Contract) -> None:
             raise ContractValidationError("contract budgets must be non-negative numbers")
     if not isinstance(contract.minimum_citations, int) or contract.minimum_citations < 0:
         raise ContractValidationError("contract.minimum_citations must be a non-negative integer")
+    if not isinstance(contract.min_cached_tokens, int) or contract.min_cached_tokens < 0:
+        raise ContractValidationError("contract.min_cached_tokens must be a non-negative integer")
+    if contract.max_thinking_tokens is not None and (not isinstance(contract.max_thinking_tokens, int) or contract.max_thinking_tokens < 0):
+        raise ContractValidationError("contract.max_thinking_tokens must be a non-negative integer or null")
+    if contract.min_grounding_score is not None and (
+        not isinstance(contract.min_grounding_score, (int, float)) or not 0.0 <= contract.min_grounding_score <= 1.0
+    ):
+        raise ContractValidationError("contract.min_grounding_score must be a number between 0.0 and 1.0 or null")
     schemas = [contract.output_schema, *contract.tool_argument_schemas.values(), *contract.tool_output_schemas.values()]
     for schema in schemas:
         if schema is not None:

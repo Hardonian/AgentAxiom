@@ -10,7 +10,7 @@
       "type": "object", "required": ["name", "turns"],
       "properties": {
         "name": {"type": "string", "minLength": 1},
-        "turns": {"type": "array", "items": {"type": "object", "required": ["role"], "properties": {"role": {"enum": ["system", "user", "assistant", "tool"]}, "content": {"type": ["string", "null"]}, "tool_name": {"type": ["string", "null"]}, "tool_input": {}, "tool_output": {}}}},
+        "turns": {"type": "array", "items": {"type": "object", "required": ["role"], "properties": {"role": {"enum": ["system", "user", "assistant", "tool"]}, "content": {"type": ["string", "null"]}, "tool_name": {"type": ["string", "null"]}, "tool_input": {}, "tool_output": {}, "parts": {"type": "array"}}}},
         "metadata": {"type": "object"}
       }, "additionalProperties": false
     },

@@ -28,6 +28,16 @@ class Turn:
     tool_name: str | None = None
     tool_input: dict[str, Any] | None = None
     tool_output: Any = None
+    parts: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def effective_text(self) -> str:
+        """Returns turn text content, resolving text parts if content is not set."""
+        if self.content:
+            return self.content
+        if self.parts:
+            return "\n".join(str(p.get("text", "")) for p in self.parts if p.get("text"))
+        return ""
 
 
 @dataclass
@@ -51,8 +61,10 @@ class Invocation:
     adk_version: str | None = None
     response_text: str | None = None
     structured_output: Any = None
+    thought_text: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     citations: list[dict[str, Any]] = field(default_factory=list)
+    grounding: dict[str, Any] = field(default_factory=dict)
     safety: dict[str, Any] = field(default_factory=dict)
     token_usage: dict[str, int] = field(default_factory=dict)
     latency_ms: float = 0.0
@@ -118,6 +130,8 @@ def validate_transcript_data(data: Any) -> None:
             not isinstance(turn["content"], str) or len(turn["content"]) > MAX_TEXT_CHARS
         ):
             raise TranscriptValidationError(f"turn {index} content must be text under {MAX_TEXT_CHARS} characters")
+        if turn.get("parts") is not None and not isinstance(turn.get("parts"), list):
+            raise TranscriptValidationError(f"turn {index} parts must be a list")
     for attribute in ("model", "region"):
         if not isinstance(invocation.get(attribute), str) or not invocation[attribute].strip():
             raise TranscriptValidationError(f"invocation.{attribute} must be a non-empty string")

@@ -12,7 +12,14 @@ from typing import Any
 from .contracts import ContractResult
 from .models import Transcript
 
-DEFAULT_SECRET_PATTERNS = [r"(?i)(api[_-]?key|authorization|token|password)\s*[:=]\s*[^\s,]+", r"AIza[\w-]{20,}"]
+DEFAULT_SECRET_PATTERNS = [
+    r"(?i)(api[_-]?key|authorization|token|password)\s*[:=]\s*[^\s,]+",
+    r"AIza[\w-]{20,}",
+    r"\bya29\.[A-Za-z0-9_-]+\b",
+    r"\b[a-z0-9._%+-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com\b",
+    r"\"private_key\"\s*:\s*\"[^\"]+\"",
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----[^\-]+-----END [A-Z ]*PRIVATE KEY-----",
+]
 DEFAULT_PII_PATTERNS = [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", r"\b\d{3}-?\d{2}-?\d{4}\b"]
 DEFAULT_REDACTION_PATTERNS = DEFAULT_SECRET_PATTERNS + DEFAULT_PII_PATTERNS
 
