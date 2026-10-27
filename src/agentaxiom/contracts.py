@@ -92,24 +92,35 @@ def evaluate_contract(transcript: Transcript, contract: Contract) -> ContractRes
         allowed_sources = set(contract.allowed_grounding_sources)
         all_chunks = list(inv.citations) + list(inv.grounding.get("grounding_chunks", []))
         for chunk in all_chunks:
-            uri = chunk.get("uri") or chunk.get("web", {}).get("uri") or chunk.get("retrieved_context", {}).get("uri") or ""
+            ret_ctx = chunk.get("retrieved_context", {})
+            uri = chunk.get("uri") or chunk.get("web", {}).get("uri") or ret_ctx.get("uri") or ""
             domain = urlparse(uri).netloc if uri else ""
-            datastore = chunk.get("retrieved_context", {}).get("rag_corpus_id") or chunk.get("datastore_id") or ""
+            datastore = ret_ctx.get("rag_corpus_id") or chunk.get("datastore_id") or ""
             matched = False
             for allowed_source in allowed_sources:
-                if (domain and domain == allowed_source) or (uri and uri.startswith(allowed_source)) or (datastore and datastore == allowed_source):
+                if (
+                    (domain and domain == allowed_source)
+                    or (uri and uri.startswith(allowed_source))
+                    or (datastore and datastore == allowed_source)
+                ):
                     matched = True
                     break
             if not matched and (uri or datastore):
-                violations.append({"kind": "grounding_source", "source": uri or datastore, "allowed": sorted(allowed_sources)})
+                violations.append(
+                    {"kind": "grounding_source", "source": uri or datastore, "allowed": sorted(allowed_sources)}
+                )
     if contract.min_grounding_score is not None:
         supports = inv.grounding.get("grounding_supports", [])
         for support in supports:
             score = support.get("confidence_score") or support.get("score")
             if score is not None and score < contract.min_grounding_score:
-                violations.append({"kind": "grounding_score", "actual": score, "minimum": contract.min_grounding_score})
+                violations.append(
+                    {"kind": "grounding_score", "actual": score, "minimum": contract.min_grounding_score}
+                )
     if contract.require_context_cache and inv.token_usage.get("cached", 0) <= 0:
-        violations.append({"kind": "context_cache", "message": "expected context cache hit but cached token count is 0"})
+        violations.append(
+            {"kind": "context_cache", "message": "expected context cache hit but cached token count is 0"}
+        )
     if contract.min_cached_tokens > 0 and inv.token_usage.get("cached", 0) < contract.min_cached_tokens:
         violations.append({
             "kind": "cached_tokens",
@@ -147,7 +158,14 @@ def validate_contract(contract: Contract) -> None:
     overlap = set(contract.required_tools) & set(contract.forbidden_tools)
     if overlap:
         raise ContractValidationError(f"tools cannot be both required and forbidden: {sorted(overlap)}")
-    for attribute in ("required_tools", "forbidden_tools", "allowed_citation_domains", "blocked_safety_categories", "allowed_grounding_sources"):
+    list_attributes = (
+        "required_tools",
+        "forbidden_tools",
+        "allowed_citation_domains",
+        "blocked_safety_categories",
+        "allowed_grounding_sources",
+    )
+    for attribute in list_attributes:
         values = getattr(contract, attribute)
         if not isinstance(values, list) or not all(isinstance(value, str) and value.strip() for value in values):
             raise ContractValidationError(f"contract.{attribute} must be a list of non-empty strings")
@@ -169,7 +187,9 @@ def validate_contract(contract: Contract) -> None:
         raise ContractValidationError("contract.minimum_citations must be a non-negative integer")
     if not isinstance(contract.min_cached_tokens, int) or contract.min_cached_tokens < 0:
         raise ContractValidationError("contract.min_cached_tokens must be a non-negative integer")
-    if contract.max_thinking_tokens is not None and (not isinstance(contract.max_thinking_tokens, int) or contract.max_thinking_tokens < 0):
+    if contract.max_thinking_tokens is not None and (
+        not isinstance(contract.max_thinking_tokens, int) or contract.max_thinking_tokens < 0
+    ):
         raise ContractValidationError("contract.max_thinking_tokens must be a non-negative integer or null")
     if contract.min_grounding_score is not None and (
         not isinstance(contract.min_grounding_score, (int, float)) or not 0.0 <= contract.min_grounding_score <= 1.0

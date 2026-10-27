@@ -2,9 +2,11 @@
 
 from .comparison import ComparisonPolicy, ComparisonResult, compare
 from .contracts import Contract, ContractResult, evaluate_contract
-from .models import Scenario, Transcript, Turn
+from .exports import export_bigquery, export_gcs, export_vertex_evaluation, format_gcp_log_entry
+from .models import Invocation, Scenario, Transcript, Turn
 from .pricing import ModelPricing, PricingCatalog
-from .providers import ProviderError, RetryPolicy
+from .providers import GeminiVertexClient, ProviderError, RetryPolicy
+from .recorder import GeminiRecording, record_gemini
 from .replay import ReplayPolicy, ReplayRunner
 
 __all__ = [
@@ -20,8 +22,16 @@ __all__ = [
     "RetryPolicy",
     "Scenario",
     "Turn",
+    "Invocation",
     "Transcript",
     "ReplayRunner",
     "ReplayPolicy",
+    "GeminiVertexClient",
+    "GeminiRecording",
+    "record_gemini",
+    "export_gcs",
+    "export_bigquery",
+    "export_vertex_evaluation",
+    "format_gcp_log_entry",
 ]
 __version__ = "0.1.0"

@@ -1,59 +1,126 @@
 # AgentAxiom
 
-Evidence-first regression and contract testing for Gemini and Vertex AI agents.
+**Evidence-first regression and contract testing for Gemini and Vertex AI agents.**
 
-> Turn an unreliable agent regression into a minimized, replayable, evidence-backed contract violation.
+> *Turn flaky agent regressions into deterministic, minimized, replayable, evidence-backed contract violations.*
 
-AgentAxiom records a scenario's prompt hash, model/provider identity, region, generation configuration, declared tools, usage, latency, cost, citations and safety metadata. It evaluates deterministic contracts against that record, so CI is offline by default. Live confirmations are opt-in and bounded by a hard call and cost budget.
+AgentAxiom brings reliable software engineering rigor to Google Cloud AI development. It records an agent scenario's prompt hash, model identity, region, generation parameters, declared tools, token usage (including **Context Caching** and **Thinking Tokens**), latency, estimated cost, citations, and safety metadata. It verifies deterministic contracts against that record, keeping CI fast, offline, and zero-dollar by default.
 
-See the prioritized [100-item go-live gate](docs/GO_LIVE_100.md) for completed repository controls and the required external release approvals.
+---
 
-## MVP capabilities
+## Why Google Developers Choose AgentAxiom
 
-- JSON Schema output validation and required/forbidden tool-call contracts.
-- Grounding/citation, safety action, cost, and latency assertions.
-- Offline fixture replay with fail-closed live verification gates.
-- Delta-debug conversation minimization for reproducible failing traces.
-- Sanitized JSON and HTML evidence bundles.
-- Pytest fixture, CLI, and GitHub Actions workflow.
-- Deterministic baseline/candidate comparisons with narrowly configurable noise paths.
-- Per-tool argument schemas, allowed citation domains, evidence checksums, and Cloud Trace correlation IDs.
+1. **Zero-Touch SDK Recording (`google-genai`)**: Wrap `genai.Client` in a 2-line context manager. No framework rewrites.
+2. **Context Caching Regression Gates**: Guarantee prompt cache hits on Vertex AI (`require_context_cache`, `min_cached_tokens`) to prevent silent 4x cost blowups.
+3. **Thinking Budget Assertions**: Cap reasoning tokens (`max_thinking_tokens`) on Gemini 2.0/2.5 Flash Thinking models.
+4. **Vertex AI Grounding & Safety Verification**: Assert on grounding confidence scores (`min_grounding_score`), approved datastores/corpora, and safety categories (`HARM_CATEGORY_*`).
+5. **Full Google Cloud Pipeline**:
+   - Ready-to-run **Google Cloud Build** pipeline (`cloudbuild.yaml`).
+   - Native **Cloud Logging** structured logs with **Cloud Trace** deep-links.
+   - Evidence exports to **Google Cloud Storage** and **BigQuery**.
+   - Bridges directly to **Vertex AI Gen AI Evaluation Service** (`agentaxiom export-eval`).
+   - Private, internal **Cloud Run** evaluator service.
+6. **Automatic Google Secret Redaction**: Sanitizes Google OAuth tokens (`ya29...`), Service Account emails, GCP private keys, and API keys before evidence is written.
 
-## Quick start
+---
 
-```bash
-pip install -e .
-pytest
-agentaxiom check fixture.json examples/contract.json --evidence-dir artifacts/quoted-answer
-```
+## Quick Start
 
-`fixture.json` uses the `Transcript` shape (scenario plus invocation). The evidence bundle emits `evidence.json` and `index.html`; secret-looking values are redacted before writing.
-
-Try the included complete offline path:
+### 1. Installation
 
 ```bash
-python -m agentaxiom.cli check examples/fixture.json examples/contract.json
-python -m agentaxiom.cli compare examples/fixture.json examples/fixture.json
-agentaxiom minimize failing.json contract.json --output minimized.json
+pip install agentaxiom
+# With Vertex AI and Google Cloud export dependencies:
+pip install 'agentaxiom[vertex,export]'
 ```
 
-## Live provider boundary
+### 2. Capture a Gemini Run in 2 Lines
 
-The core deliberately has no implicit network path. Implement the small `AgentClient` protocol for Gemini/Vertex or ADK, then supply `ReplayPolicy(live_verification=True, max_live_calls=N, max_live_cost_usd=X)`. Calls without this explicit opt-in, or beyond either budget, raise `PermissionError`.
+```python
+from google import genai
+from agentaxiom import record_gemini
 
-## Planned adapters and exports
+client = genai.Client()
 
-The core is provider-neutral so Gemini, Vertex AI, ADK, Cloud Trace, Cloud Run, GCS, and BigQuery adapters can preserve each platform's native response metadata without weakening the evidence format. Optional package groups are reserved for the Google provider/export clients:
+with record_gemini(client, scenario_name="billing-agent") as rec:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents="Lookup invoice INV-9021 and calculate balance.",
+        config={"tools": [lookup_invoice]}
+    )
+
+# Save offline fixture for CI regression testing
+with open("tests/fixtures/billing_agent.json", "w") as f:
+    f.write(json.dumps(rec.transcript.to_dict(), indent=2))
+```
+
+### 3. Define a Deterministic Contract (`contract.json`)
+
+```json
+{
+  "name": "billing-contract",
+  "required_tools": ["lookup_invoice"],
+  "require_context_cache": true,
+  "min_cached_tokens": 5000,
+  "max_thinking_tokens": 1000,
+  "min_grounding_score": 0.85,
+  "allowed_grounding_sources": ["finance.corp.test"],
+  "max_latency_ms": 2500,
+  "max_cost_usd": 0.01
+}
+```
+
+### 4. Run Offline in Pytest or CI
+
+```python
+def test_billing_agent(agent_contract):
+    # Evaluates offline against the committed transcript fixture
+    agent_contract("tests/fixtures/billing_agent.json", "contracts/contract.json")
+```
+
+Or via CLI:
 
 ```bash
-pip install -e '.[vertex,export]'
+agentaxiom check tests/fixtures/billing_agent.json contracts/contract.json --evidence-dir artifacts/billing
 ```
 
-`GeminiVertexClient` in `agentaxiom.providers` is the optional recorder adapter; `export_gcs` and `export_bigquery` in `agentaxiom.exports` publish evidence to those sinks. Cloud Run can invoke the CLI or pytest suite directly, and the returned evidence record carries the IDs needed to correlate Cloud Trace spans supplied by the calling service.
+---
 
-## Cloud Run evaluator
+## Google Cloud Enterprise Integrations
 
-The included container exposes an offline-only evaluator, suitable for a CI runner or a protected internal service:
+### Google Cloud Build Pipeline
+
+Run contract checks automatically on every pull request without calling live models:
+
+```yaml
+# cloudbuild.yaml
+steps:
+  - name: 'python:3.12-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install -e '.[test]'
+        pytest -v --agentaxiom-evidence=agentaxiom-evidence
+        agentaxiom check fixtures/agent.json contracts/contract.json
+
+artifacts:
+  objects:
+    location: 'gs://${PROJECT_ID}-agentaxiom-builds/${BUILD_ID}'
+    paths: ['agentaxiom-evidence/**']
+```
+
+### Vertex AI Evaluation Service Export
+
+Export recorded transcripts directly to JSONL for Vertex AI Evaluation (`EvalTask`):
+
+```bash
+agentaxiom export-eval tests/fixtures/billing_agent.json --output eval_dataset.jsonl
+```
+
+### Cloud Run Evaluator Service
+
+Deploy an internal Cloud Run evaluator service for centralized microservice or CI validation:
 
 ```bash
 docker build -t agentaxiom .
@@ -61,27 +128,30 @@ docker run -p 8080:8080 agentaxiom
 # POST /evaluate with {"transcript": <fixture>, "contract": <contract>}
 ```
 
-`GET /healthz` returns readiness. `POST /evaluate` never invokes a model; evidence writing is optional and defaults to ephemeral container storage.
-
-### No-code checkup screen
-
-Open the evaluator's root URL to use the built-in plain-language console. It lets non-technical teammates upload a saved run and its rule file, see a simple pass/fail explanation, compare two runs, and download a shareable result. With a local install, start it with:
-
-```bash
-agentaxiom serve
-# Then open http://localhost:8080
+Cloud Run emits structured JSON log entries correlated with **Google Cloud Trace**:
+```json
+{
+  "severity": "INFO",
+  "message": "Contract PASSED: billing-contract on scenario billing-agent",
+  "logging.googleapis.com/trace": "projects/my-gcp-project/traces/4bf92f3577b34da...",
+  "contract": "billing-contract",
+  "passed": true
+}
 ```
 
-The screen uses the same offline evaluator and does not make model calls.
+---
 
-It is designed for a simple hand-off: an engineer records the run and writes the rules once; anyone on the team can then use the browser screen to review the result.
+## CLI Reference
 
-## Regression workflow
+- `agentaxiom check <transcript> <contract>`: Evaluate a transcript against a contract offline.
+- `agentaxiom compare <baseline> <candidate>`: Compare cross-run tool calls, latency, safety, and outputs.
+- `agentaxiom minimize <failing_transcript> <contract> --output <min.json>`: Delta-debug multi-turn traces down to the minimal failing sequence.
+- `agentaxiom record --model gemini-2.5-flash --prompt "..." --output <fixture.json>`: Record a live call to a fixture file.
+- `agentaxiom export-eval <transcript> --output <dataset.jsonl>`: Export transcripts to Vertex AI Evaluation dataset format.
+- `agentaxiom serve`: Launch the no-code web console locally.
 
-1. Capture a sanitized `Transcript` after an agent response, including the exact tools, provider model, region, generation settings and ADK version.
-2. Commit it as an offline fixture and pair it with a `Contract`.
-3. Run `agentaxiom check` in CI. Failed runs write a self-contained, checksumed evidence bundle.
-4. Use `agentaxiom compare baseline.json candidate.json` when validating a model, region, prompt, or dependency upgrade. For a failure whose trigger is independent of deleted context, use `agentaxiom minimize` to delta-debug the trace.
-5. Only for a bounded confirmation, create a `ReplayRunner` with `live_verification=True`, a nonzero call limit, and an explicit cost ceiling.
+---
 
-The root [GitHub Action](action.yml) accepts a transcript and contract path for use from another repository.
+## Release & Governance
+
+See the prioritized [100-item go-live gate](docs/GO_LIVE_100.md) and [Public API Reference](docs/API.md) for full architecture and contract schema documentation.

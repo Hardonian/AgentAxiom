@@ -83,9 +83,10 @@ def format_gcp_log_entry(
     """Formats a structured Google Cloud Logging entry correlated with Cloud Trace."""
     severity = "INFO" if result.passed else "ERROR"
     trace_id = transcript.invocation.trace_id
+    status_str = "PASSED" if result.passed else "FAILED"
     entry: dict[str, Any] = {
         "severity": severity,
-        "message": f"Contract {'PASSED' if result.passed else 'FAILED'}: {result.contract} on scenario {transcript.scenario.name}",
+        "message": f"Contract {status_str}: {result.contract} on scenario {transcript.scenario.name}",
         "component": component,
         "scenario": transcript.scenario.name,
         "model": transcript.invocation.model,
