@@ -46,3 +46,4 @@ print(
         "latency_ms": invocation.latency_ms,
     }
 )
+
