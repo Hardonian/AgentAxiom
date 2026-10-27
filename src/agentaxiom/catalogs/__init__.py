@@ -12,3 +12,4 @@ def get_catalog_data(name: str = "gemini-catalog-2026-10") -> dict[str, Any]:
     filename = f"{name}.json" if not name.endswith(".json") else name
     content = files("agentaxiom.catalogs").joinpath(filename).read_text(encoding="utf-8")
     return json.loads(content)
+

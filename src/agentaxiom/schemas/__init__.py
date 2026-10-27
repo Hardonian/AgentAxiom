@@ -12,3 +12,4 @@ def get_schema(name: str) -> dict[str, Any]:
     filename = f"{name}.schema.json" if not name.endswith(".json") else name
     content = files("agentaxiom.schemas").joinpath(filename).read_text(encoding="utf-8")
     return json.loads(content)
+
