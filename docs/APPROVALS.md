@@ -12,8 +12,9 @@ service:
 
 - Redact field names matching secret conventions (already implemented, gate 24)
   plus values shaped like: email addresses, US phone numbers, SSN-like
-  `###-##-####`, payment-PAN-like digit runs (with Luhn check), and
-  `Bearer`/`sk-`/`AIza`-prefixed tokens.
+  `###-##-####`, payment-PAN-like digit runs (with Luhn check),
+  `Bearer`/`sk-`/`AIza`-prefixed tokens, Google OAuth access tokens (`ya29...`),
+  Google Cloud Service Account emails, and private key blocks.
 - Retention: local CLI evidence is caller-owned; GCS export objects follow the
   already-provisioned 30-day bucket lifecycle (gate 71); BigQuery `runs` rows
   are partitioned and expire after 90 days.
@@ -31,10 +32,9 @@ Approver name: ____________________  Date: ____________
 ## Gate 70 — Pricing catalog approval
 
 Draft catalog: `pricing/gemini-catalog-2026-10.json` (version
-`2026-10-20-draft.1`). Rates verified 2026-10-20 against the official Gemini
-API and Vertex pricing pages; each rate carries its own `effective_date` and
-`source` URL. Known limits are recorded in the file's `notes` (Pro >200K-token
-tier is not modeled; announced Dec-2026/Jan-2027 increases require re-verification).
+`2026-10-20-draft.2`). Rates verified 2026-10-20 against the official Gemini
+API and Vertex pricing pages; covers Gemini 1.5, 2.0, and 2.5 with context caching discounts.
+Each rate carries its own `effective_date` and `source` URL.
 
 Approving flips `approval_status` to `approved` in a follow-up commit; the
 catalog stays a local file — AgentAxiom never fetches pricing remotely
@@ -42,7 +42,7 @@ catalog stays a local file — AgentAxiom never fetches pricing remotely
 
 Decision:
 
-- [ ] Approve `2026-10-20-draft.1` as the authoritative catalog
+- [ ] Approve `2026-10-20-draft.2` as the authoritative catalog
 - [ ] Approve with changes (specify below)
 - [ ] Reject; will supply an org catalog file
 
