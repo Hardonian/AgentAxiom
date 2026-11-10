@@ -18,7 +18,7 @@ runs:
       run: python -m pip install '${{ github.action_path }}'
     - shell: bash
       run: python -m agentaxiom.cli check '${{ inputs.transcript }}' '${{ inputs.contract }}' --evidence-dir '${{ inputs.evidence-dir }}'
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: always()
       with:
         name: agentaxiom-evidence
